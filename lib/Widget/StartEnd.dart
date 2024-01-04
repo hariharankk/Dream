@@ -7,82 +7,100 @@ import 'package:inventory/Model/polygon.dart';
 import 'package:inventory/Getx/maps.dart';
 import 'package:inventory/Getx/timer.dart';
 import 'package:inventory/Service/Repository.dart';
-
-
-class StartController extends GetxController {
+import 'package:inventory/Getx/euler.dart';
+class StartController extends GetxController with WidgetsBindingObserver {
   var start = true.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadStart();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      saveStart(); // Save the state when the app is backgrounded
+    }
+  }
+
+  @override
+  void onClose() {
+    saveStart();
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
 
   void toggleStart() {
     start.toggle();
   }
 
-  // Function to load start value from SharedPreferences
   Future<void> loadStart() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    start.value = prefs.getBool('start') ?? true; // Default to true if not found
-    print(prefs.getBool('start'));
+    var dummy = prefs.getBool('start');
+    print('thaa dei ${dummy}');
+    start.value = prefs.getBool('start') ?? true;
   }
 
-  // Function to save start value to SharedPreferences
   Future<void> saveStart() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('start', start.value);
   }
 }
 
-class StartActionButton extends StatelessWidget {
+
+class StartActionButton extends StatelessWidget  {
   final StartController _startController = Get.find<StartController>();
   final CountdownController _countdownController = Get.find<CountdownController>();
+  final EulerCircuit _eulerCircuit = Get.find<EulerCircuit>();
+
 
 
   @override
   Widget build(BuildContext context) {
+    _startController.loadStart();
+
     return Obx(() {
       return Padding(
-        padding: const EdgeInsets.only(top: 24.0,bottom: 24), // Increase padding for a larger button
+        padding: const EdgeInsets.only(top: 24.0, bottom: 24),
         child: ElevatedButton.icon(
           onPressed: () async {
-            await _startController.loadStart();
+
+
             if (_startController.start.value) {
-              // If start is true, open map
               try {
                 List<PolygonModel> varia = await repository.fetchPolygons();
                 await storeData(varia.map((polygon) => polygon.toJson()).toList());
                 streetBloc.fetchStreetsByPolygon(varia[0].polygonId);
                 _countdownController.remainingTime.value = Duration(minutes: varia[0].timer);
                 _countdownController.startTimer();
-
-                _startController.toggleStart();
-                // Save the updated start value to SharedPreferences
-                await _startController.saveStart();
+                //_eulerCircuit.setCurrentSegmentIndex(0);
               } catch (e) {
                 print(e);
               }
             } else {
-              _startController.toggleStart();
-               await deleteStoredData();
-
-              // Save the updated start value to SharedPreferences
-              await _startController.saveStart();
-               _countdownController.remainingTime.value = Duration(minutes: 0);
-
-              // Your custom action when start is false
+              await deleteStoredData();
+              _countdownController.remainingTime.value = Duration(minutes: 0);
             }
 
-            // Toggle the state of start using GetX controller
+            // Toggle the start state and save it
+            _startController.toggleStart();
+            await _startController.saveStart();
           },
-          icon: _startController.start.value
-              ? Icon(Icons.location_on, size: 36.0)  // Use this icon when start is true, increase size to 36.0
-              : Icon(Icons.location_off, size: 36.0),  // Use this icon when start is false, increase size to 36.0
+          icon: Icon(
+              _startController.start.value ? Icons.location_on : Icons.location_off,
+              size: 36.0
+          ),
           label: Text(
             _startController.start.value ? "Start" : "End",
-            style: TextStyle(fontSize: 18.0), // Increase text size
+            style: TextStyle(fontSize: 18.0),
           ),
           style: ElevatedButton.styleFrom(
             primary: Colors.white,
             onPrimary: Colors.black,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0), // Increase border radius for rounded corners
+              borderRadius: BorderRadius.circular(12.0),
             ),
           ),
         ),
@@ -90,3 +108,6 @@ class StartActionButton extends StatelessWidget {
     });
   }
 }
+
+
+

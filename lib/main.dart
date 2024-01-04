@@ -1,4 +1,3 @@
- import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -10,20 +9,22 @@ import 'package:inventory/screens/maps.dart';
 import 'package:inventory/Getx/maps.dart';
 import 'package:inventory/Widget/jktdirection.dart';
 import 'package:inventory/Widget/StartEnd.dart';
-/*
-  1. Login Completed(On error show alert dialog remaining)
-  2. Cart Items Value to be updated on adding a new product
-  3.  Cart Ready
-  4. Payment Ready
-  5. Profile Page Only need to get data
-  6. All Transactions Only Need to Get Data
-  7. Update total on deletion of items in cart page
-  8. Empty Cart After Payment Completes
- */
+import 'package:inventory/Getx/navigation.dart';
+import 'package:inventory/Getx/timer.dart';
+import 'package:inventory/Getx/euler.dart';
+import 'package:inventory/Widget/street review.dart';
+
 void main() {
+
   Get.put(LocationController());
   Get.put(FlagController());
   Get.put(StartController());
+  Get.put(NavigationController());
+  Get.put(EulerCircuit());
+  Get.put(StreetreviewController());
+  Get.put(CountdownController());
+
+
   runApp(MyApp());
 }
 

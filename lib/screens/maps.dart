@@ -5,30 +5,32 @@ import 'package:inventory/Widget/jktdirection.dart';
 import 'package:inventory/Getx/maps.dart'; // Import your LocationController
 import 'package:inventory/Widget/timer.dart';
 import 'package:inventory/Widget/navigation.dart';
-import 'package:inventory/Getx/navigation.dart';
 import 'package:inventory/Service/Bloc.dart';
 import 'package:inventory/Widget/StartEnd.dart';
 import 'package:inventory/Getx/euler.dart';
 import 'package:inventory/Getx/timer.dart';
+import 'package:inventory/Model/polygon.dart';
+import 'package:inventory/shared pref.dart';
+import 'package:inventory/Utility.dart';
+import 'package:inventory/Widget/street review.dart';
+
 // Usage example
 
 class MapScreen extends StatelessWidget {
   final MapController _mapController = MapController();
   final LocationController _locationController =   Get.find<LocationController>(); // Use Get.find instead of Get.put
-  final NavigationController _navigationController = Get.put(NavigationController());
-  final CountdownController _countdownController = Get.put(CountdownController());
+  final CountdownController _countdownController = Get.find<CountdownController>();
+  final EulerCircuit _eulerCircuit = Get.find<EulerCircuit>();
+  final StreetreviewController _streetReviewController = Get.find<StreetreviewController>();
 
-  final FlagController _flagController =
-      Get.find<FlagController>(); // Initialize and put the FlagController
-  final StartController _startController = Get.find<StartController>();
   void _zoomIn() {
     _mapController.move(
-        _mapController.center, (_mapController.zoom ?? 13.0) + 1);
+        _mapController.camera.center, (_mapController.camera.zoom ) + 1);
   }
 
   void _zoomOut() {
     _mapController.move(
-        _mapController.center, (_mapController.zoom ?? 13.0) - 1);
+        _mapController.camera.center, (_mapController.camera.zoom ) - 1);
   }
 
   @override
@@ -40,6 +42,7 @@ class MapScreen extends StatelessWidget {
             () {
               var currentLocation = _locationController.currentLocation.value;
               var currentbearing = _locationController.compassHeading.value;
+              var neededstreetid = _streetReviewController.selectedStreetIndex.value;
               return StreamBuilder<dynamic>(
                 stream: streetBloc.streetDataStream,
                 // Replace with your location stream
@@ -55,10 +58,10 @@ class MapScreen extends StatelessWidget {
                   // Get the current location from the snapshot
                   var streetsData = snapshot.data!['streets'];
                   var euler = snapshot.data!['eulerCircuit'];
-                  List<Polyline> polylines = eulercircuit.generatePolylinesForCurrentAndNextSegments(euler, streetsData,currentLocation,currentbearing);
-
-
-
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _streetReviewController.initializeStreets(streetsData);
+                  });
+                  List<Polyline> polylines = _eulerCircuit.generatePolylinesForCurrentAndNextSegments(euler, streetsData,currentLocation,currentbearing,neededstreetid);
 
 // Create a polyline with the points list
                   // Add the current location marker to the list
@@ -76,8 +79,8 @@ class MapScreen extends StatelessWidget {
                   return FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
-                      center: currentLocation,
-                      zoom: 13.0,
+                      initialCenter: currentLocation,
+                      initialZoom: 13.0,
                     ),
                     children: [
                       TileLayer(
@@ -88,7 +91,7 @@ class MapScreen extends StatelessWidget {
                       MarkerLayer(
                         markers: streetMarkers,
                       ),
-                      PolylineLayer(polylines: polylines),
+                     PolylineLayer(polylines: polylines),
                     ],
                   );
                 },
@@ -121,7 +124,7 @@ class MapScreen extends StatelessWidget {
               foregroundColor: Colors.black,
             ),
           ),
-          Positioned(
+          /*Positioned(
             right: 20.0,
             top: 410.0,
             child: FloatingActionButton(
@@ -143,7 +146,7 @@ class MapScreen extends StatelessWidget {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
             ),
-          ),
+          ),*/
           Positioned(
             right: 20.0,
             top: 210.0,
@@ -155,11 +158,10 @@ class MapScreen extends StatelessWidget {
                 _mapController.rotate(targetRotation);
               },
               child: Icon(Icons.compass_calibration_rounded),
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
+              backgroundColor: Colors.white, foregroundColor: Colors.black,
             ),
           ),
-/*          Positioned(
+         Positioned(
             right: 20.0,
             top: 410.0,
             child: FloatingActionButton(
@@ -174,17 +176,26 @@ class MapScreen extends StatelessWidget {
                 await storeData(retrievedData);
                 _countdownController.remainingTime.value = Duration(minutes: firstPolygon.timer);
                 _countdownController.startTimer();
+                _eulerCircuit.setCurrentSegmentIndex(0);
 
               },
               child: Icon(Icons.navigate_next),
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
             ),
-          ),*/
+          ),
 
 // Usage in your main widget
           Positioned(right: 20.0, top: 110.0, child: FlagActionButton()),
           Positioned(right: 20.0, top: 10.0, child: StartActionButton()),
+          Positioned(
+            left: MediaQuery.of(context).size.width * 0.05, // Example position
+            top: MediaQuery.of(context).size.height * 0.45,
+//            right: MediaQuery.of(context).size.width * 0.005, // Add a right constraint
+            bottom: MediaQuery.of(context).size.height * 0.05, // Add a bottom constraint to define the height
+
+            child: StreetListView(),
+          ),
         ],
       ),
       floatingActionButton: Column(
