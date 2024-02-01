@@ -164,6 +164,8 @@ class StreetBloc {
     }
   }
 
+
+
   Future updateStreet(int streetId, String delStatus, String delType, String delReason) async {
     try {
        await repository.updateStreet(streetId, delStatus, delType, delReason);

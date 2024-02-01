@@ -11,26 +11,44 @@ import 'package:inventory/Getx/euler.dart';
 import 'package:inventory/Getx/timer.dart';
 import 'package:inventory/Model/polygon.dart';
 import 'package:inventory/shared pref.dart';
-import 'package:inventory/Utility.dart';
 import 'package:inventory/Widget/street review.dart';
-
+import 'package:inventory/Widget/marker.dart';
 // Usage example
 
 class MapScreen extends StatelessWidget {
   final MapController _mapController = MapController();
-  final LocationController _locationController =   Get.find<LocationController>(); // Use Get.find instead of Get.put
-  final CountdownController _countdownController = Get.find<CountdownController>();
+  final LocationController _locationController =
+      Get.find<LocationController>(); // Use Get.find instead of Get.put
+  final CountdownController _countdownController =
+      Get.find<CountdownController>();
   final EulerCircuit _eulerCircuit = Get.find<EulerCircuit>();
-  final StreetreviewController _streetReviewController = Get.find<StreetreviewController>();
+  final StreetreviewController _streetReviewController =
+      Get.find<StreetreviewController>();
+  final StartController _startController = Get.find<StartController>();
+
+  Future<void> _handleNoStreamData() async {
+    // Check if the start flag is false before proceeding
+    if (!_startController.start.value) {
+      List<Map<String, dynamic>> retrievedData = await retrieveData();
+      if (retrievedData.isNotEmpty) {
+        PolygonModel firstPolygon = PolygonModel.fromJson(retrievedData[0]);
+        streetBloc.fetchStreetsByPolygon(firstPolygon.polygonId);
+        _countdownController.remainingTime.value =
+            Duration(minutes: firstPolygon.timer);
+        _countdownController.startTimer();
+        _eulerCircuit.setCurrentSegmentIndex(0);
+      }
+    }
+  }
 
   void _zoomIn() {
     _mapController.move(
-        _mapController.camera.center, (_mapController.camera.zoom ) + 1);
+        _mapController.camera.center, (_mapController.camera.zoom) + 1);
   }
 
   void _zoomOut() {
     _mapController.move(
-        _mapController.camera.center, (_mapController.camera.zoom ) - 1);
+        _mapController.camera.center, (_mapController.camera.zoom) - 1);
   }
 
   @override
@@ -42,7 +60,9 @@ class MapScreen extends StatelessWidget {
             () {
               var currentLocation = _locationController.currentLocation.value;
               var currentbearing = _locationController.compassHeading.value;
-              var neededstreetid = _streetReviewController.selectedStreetIndex.value;
+              var neededstreetid =
+                  _streetReviewController.selectedStreetIndex.value;
+              var selectedid = _eulerCircuit.currentSegmentIndex.value;
               return StreamBuilder<dynamic>(
                 stream: streetBloc.streetDataStream,
                 // Replace with your location stream
@@ -52,29 +72,25 @@ class MapScreen extends StatelessWidget {
                   }
 
                   if (!snapshot.hasData) {
+                    _handleNoStreamData();
                     return Center(child: Text('Waiting for location data...'));
                   }
-                  List<Marker> streetMarkers = [];
                   // Get the current location from the snapshot
                   var streetsData = snapshot.data!['streets'];
                   var euler = snapshot.data!['eulerCircuit'];
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _streetReviewController.initializeStreets(streetsData);
                   });
-                  List<Polyline> polylines = _eulerCircuit.generatePolylinesForCurrentAndNextSegments(euler, streetsData,currentLocation,currentbearing,neededstreetid);
+                  List<Polyline> polylines =
+                      _eulerCircuit.generatePolylinesForCurrentAndNextSegments(
+                          euler,
+                          streetsData,
+                          currentLocation,
+                          currentbearing,
+                          neededstreetid);
 
 // Create a polyline with the points list
                   // Add the current location marker to the list
-                  streetMarkers.add(Marker(
-                    width: 80.0,
-                    height: 80.0,
-                    point: currentLocation,
-                    child: Icon(
-                      Icons.location_pin,
-                      color: Colors.red, // Color for current location marker
-                      size: 30.0, // Size for current location marker
-                    ),
-                  ));
 
                   return FlutterMap(
                     mapController: _mapController,
@@ -88,10 +104,9 @@ class MapScreen extends StatelessWidget {
                             'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         subdomains: ['a', 'b', 'c'],
                       ),
-                      MarkerLayer(
-                        markers: streetMarkers,
-                      ),
-                     PolylineLayer(polylines: polylines),
+                      // Replace the direct Marker creation with LocationMarker
+                      LocationMarker(currentLocation: currentLocation),
+                      PolylineLayer(polylines: polylines),
                     ],
                   );
                 },
@@ -115,16 +130,14 @@ class MapScreen extends StatelessWidget {
             child: FloatingActionButton(
               onPressed: () async {
                 _locationController.moveToCurrentLocation(_mapController);
-
-
-// Later, when you need the data
               },
               child: Icon(Icons.my_location),
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
             ),
           ),
-          /*Positioned(
+
+          Positioned(
             right: 20.0,
             top: 410.0,
             child: FloatingActionButton(
@@ -146,7 +159,8 @@ class MapScreen extends StatelessWidget {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
             ),
-          ),*/
+          ),
+
           Positioned(
             right: 20.0,
             top: 210.0,
@@ -158,28 +172,6 @@ class MapScreen extends StatelessWidget {
                 _mapController.rotate(targetRotation);
               },
               child: Icon(Icons.compass_calibration_rounded),
-              backgroundColor: Colors.white, foregroundColor: Colors.black,
-            ),
-          ),
-         Positioned(
-            right: 20.0,
-            top: 410.0,
-            child: FloatingActionButton(
-              onPressed: () async{
-
-                List<Map<String, dynamic>> retrievedData = await retrieveData();
-                retrievedData.removeAt(0);
-                PolygonModel firstPolygon = PolygonModel.fromJson(retrievedData[0]);
-                webOpenMapWithDirections(_locationController.currentLocation.value.latitude,_locationController.currentLocation.value.longitude,firstPolygon.navigatingCoordinateEnd.longitude,firstPolygon.navigatingCoordinateEnd.latitude);
-                //openMapWithDirections(_locationController.currentLocation.value.latitude,_locationController.currentLocation.value.longitude,firstPolygon.navigatingCoordinateEnd.latitude,firstPolygon.navigatingCoordinateEnd.latitude);
-                streetBloc.fetchStreetsByPolygon(firstPolygon.polygonId);
-                await storeData(retrievedData);
-                _countdownController.remainingTime.value = Duration(minutes: firstPolygon.timer);
-                _countdownController.startTimer();
-                _eulerCircuit.setCurrentSegmentIndex(0);
-
-              },
-              child: Icon(Icons.navigate_next),
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
             ),
@@ -189,10 +181,12 @@ class MapScreen extends StatelessWidget {
           Positioned(right: 20.0, top: 110.0, child: FlagActionButton()),
           Positioned(right: 20.0, top: 10.0, child: StartActionButton()),
           Positioned(
-            left: MediaQuery.of(context).size.width * 0.05, // Example position
+            left: MediaQuery.of(context).size.width * 0.05,
+            // Example position
             top: MediaQuery.of(context).size.height * 0.45,
 //            right: MediaQuery.of(context).size.width * 0.005, // Add a right constraint
-            bottom: MediaQuery.of(context).size.height * 0.05, // Add a bottom constraint to define the height
+            bottom: MediaQuery.of(context).size.height * 0.05,
+            // Add a bottom constraint to define the height
 
             child: StreetListView(),
           ),

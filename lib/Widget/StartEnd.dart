@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:inventory/Service/Bloc.dart';
 import 'package:inventory/Model/polygon.dart';
-import 'package:inventory/Getx/maps.dart';
 import 'package:inventory/Getx/timer.dart';
 import 'package:inventory/Service/Repository.dart';
-import 'package:inventory/Getx/euler.dart';
+
+
 class StartController extends GetxController with WidgetsBindingObserver {
   var start = true.obs;
 
@@ -38,8 +38,6 @@ class StartController extends GetxController with WidgetsBindingObserver {
 
   Future<void> loadStart() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    var dummy = prefs.getBool('start');
-    print('thaa dei ${dummy}');
     start.value = prefs.getBool('start') ?? true;
   }
 
@@ -53,7 +51,6 @@ class StartController extends GetxController with WidgetsBindingObserver {
 class StartActionButton extends StatelessWidget  {
   final StartController _startController = Get.find<StartController>();
   final CountdownController _countdownController = Get.find<CountdownController>();
-  final EulerCircuit _eulerCircuit = Get.find<EulerCircuit>();
 
 
 

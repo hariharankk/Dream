@@ -12,7 +12,8 @@ import 'package:inventory/Model/polygon.dart';
 import 'package:inventory/Model/Streets.dart';
 
 
-String SERVERURL = 'http://1f5c-34-32-159-83.ngrok-free.app';
+String SERVERURL = 'http://95f9-34-86-224-112.ngrok-free.app';
+
 
 class Apirepository {
 
@@ -557,3 +558,43 @@ class Apirepository {
 
 }
 
+
+Future<bool> updateStreetDetails(int streetId, String delStatus, String delType, String delReason) async {
+
+  var url = Uri.parse(SERVERURL + '/update_street');
+  Map<String, dynamic> data = {
+    'street_id': streetId,
+    'del_status': delStatus,
+    'del_type': delType,
+    'del_reason': delReason,
+  };
+
+  try {
+    var response = await http.put(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        "Accept": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      var responseData = jsonDecode(response.body);
+      if (responseData['status'] == true) {
+        print('Street updated successfully');
+        return true;
+      } else {
+        print('Failed to update street: ${responseData['message']}');
+        return false;
+      }
+    } else {
+      print('Failed to update street. Status code: ${response.statusCode}');
+      return false;
+    }
+  } catch (e) {
+    print('Exception thrown while updating street: $e');
+    return false;
+  }
+}

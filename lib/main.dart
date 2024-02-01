@@ -13,6 +13,8 @@ import 'package:inventory/Getx/navigation.dart';
 import 'package:inventory/Getx/timer.dart';
 import 'package:inventory/Getx/euler.dart';
 import 'package:inventory/Widget/street review.dart';
+import 'package:inventory/Getx/street review.dart';
+
 
 void main() {
 
@@ -23,6 +25,7 @@ void main() {
   Get.put(EulerCircuit());
   Get.put(StreetreviewController());
   Get.put(CountdownController());
+  Get.put(ReasonController());
 
 
   runApp(MyApp());

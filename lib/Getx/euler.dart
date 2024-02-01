@@ -26,6 +26,15 @@ class EulerCircuit extends GetxController {
     }
   }
 
+  void addCurrentSegmentIndex() {
+    if (currentSegmentIndex.value + 1 < eulerCircuit.length) {
+      currentSegmentIndex.value++;
+    } else {
+      print("out of bounds");
+    }
+  }
+
+
   StreetModel? findStreetById(List<StreetModel> streets, int searchId) {
     for (var street in streets) {
       if (street.streetId == searchId) {

@@ -6,6 +6,7 @@ import 'package:flutter_compass/flutter_compass.dart';
 import 'dart:async';
 
 class LocationController extends GetxController {
+
   var currentLocation = Rx<LatLng>(LatLng(9.901297733498891 , 78.0111798216437));
   var currentHeading = Rx<double>(0.0);
   Location location = new Location();
