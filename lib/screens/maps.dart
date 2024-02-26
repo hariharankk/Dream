@@ -60,8 +60,7 @@ class MapScreen extends StatelessWidget {
             () {
               var currentLocation = _locationController.currentLocation.value;
               var currentbearing = _locationController.compassHeading.value;
-              var neededstreetid =
-                  _streetReviewController.selectedStreetIndex.value;
+              var neededstreetid = _streetReviewController.selectedStreetIndex.value;
               var selectedid = _eulerCircuit.currentSegmentIndex.value;
               return StreamBuilder<dynamic>(
                 stream: streetBloc.streetDataStream,

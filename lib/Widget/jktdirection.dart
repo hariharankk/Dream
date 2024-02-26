@@ -55,6 +55,7 @@ class FlagActionButton extends StatelessWidget {
       // If flag is false, execute your custom action
       var currentSegment = LatLng(_eulerCircuit.eulerCircuit[_eulerCircuit.currentSegmentIndex.value][0][0], _eulerCircuit.eulerCircuit[_eulerCircuit.currentSegmentIndex.value][0][1]);
       List<Map<String, dynamic>> retrievedData = await retrieveData();
+      print(retrievedData);
       PolygonModel firstPolygon = PolygonModel.fromJson(retrievedData[0]);
       double startLat = _locationController.currentLocation.value.latitude;
       double startLng = _locationController.currentLocation.value.longitude;

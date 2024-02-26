@@ -26,6 +26,8 @@ class EulerCircuit extends GetxController {
     }
   }
 
+
+
   void addCurrentSegmentIndex() {
     if (currentSegmentIndex.value + 1 < eulerCircuit.length) {
       currentSegmentIndex.value++;
@@ -80,62 +82,59 @@ class EulerCircuit extends GetxController {
   List<Polyline> generatePolylinesForCurrentAndNextSegments(List<dynamic> euler, List<StreetModel> streets, LatLng currentLocation, double currentbearing, int neededstreetid) {
     List<Polyline> polylines = [];
     WidgetsBinding.instance.addPostFrameCallback((_) {
-    int selectedStreetId = neededstreetid;
-    initializeEulerCircuit(euler);
-    updateLocation(currentLocation);
-    polylines.addAll(streets.map<Polyline>((street) {
-      return Polyline(
-        points: street.streetCoordinates,
-        strokeWidth: 4.0,
-        color: Colors.lightBlueAccent,
-      );
-    }).toList());
+      int selectedStreetId = neededstreetid;
+      initializeEulerCircuit(euler);
+      updateLocation(currentLocation);
 
-    if (currentSegmentIndex.value < eulerCircuit.length) {
-      StreetModel? currentStreet = findStreetById(streets, eulerCircuit[currentSegmentIndex.value][2]['id']);
-      if (currentStreet != null) {
-        polylines.add(Polyline(
-          points: currentStreet.streetCoordinates,
-          strokeWidth: 4.0,
-          color: Colors.black,
-        ));
+      // Map streets to Polylines
+      polylines.addAll(_generateStreetPolylines(streets));
+
+      // Handle current and next street segments
+      _handleStreetSegments(euler, streets, polylines, currentbearing, currentLocation, selectedStreetId);
+    });
+    return polylines;
+  }
+
+  List<Polyline> _generateStreetPolylines(List<StreetModel> streets) {
+    return streets.map<Polyline>((street) => Polyline(
+      points: street.streetCoordinates,
+      strokeWidth: 4.0,
+      color: Colors.lightBlueAccent,
+    )).toList();
+  }
+
+  void _handleStreetSegments(List<dynamic> euler, List<StreetModel> streets, List<Polyline> polylines, double currentbearing, LatLng currentLocation, int selectedStreetId) {
+    if (currentSegmentIndex.value < euler.length) {
+      _addStreetPolyline(streets, euler[currentSegmentIndex.value][2]['id'], polylines, Colors.black);
+
+      if (currentSegmentIndex.value < euler.length - 1) {
+        _addStreetPolyline(streets, euler[currentSegmentIndex.value + 1][2]['id'], polylines, Colors.red);
       }
 
-      if (currentSegmentIndex.value < eulerCircuit.length - 1) {
-        StreetModel? nextStreet = findStreetById(streets, eulerCircuit[currentSegmentIndex.value + 1][2]['id']);
-        if (nextStreet != null) {
-          polylines.add(Polyline(
-
-            points: nextStreet.streetCoordinates,
-            strokeWidth: 4.0,
-            color: Colors.red,
-          ));
-        }
+      if (currentSegmentIndex.value+1 < euler.length) {
+        var currentSegment = euler[currentSegmentIndex.value + 1];
+        _navigationController.direction.value = determineStreetDirection(
+            currentSegment[2]['bearing'], currentbearing);
+        _navigationController.distance.value =
+            distanceFromCurrentLocationToPolyline(currentLocation,
+                LatLng(currentSegment[1][0], currentSegment[1][1]));
       }
     }
 
     if (selectedStreetId >= 0) {
-      StreetModel? selectedStreet = findStreetById(streets, selectedStreetId);
-      if (selectedStreet != null) {
-        polylines.add(Polyline(
-          points: selectedStreet.streetCoordinates,
-          strokeWidth: 4.0,
-          color: Colors.green,
-        ));
-      }
+      _addStreetPolyline(streets, selectedStreetId, polylines, Colors.green);
     }
+  }
 
-      if (currentSegmentIndex.value < eulerCircuit.length) {
-        var currentSegment = eulerCircuit[currentSegmentIndex.value];
-        _navigationController.direction.value = determineStreetDirection(
-            currentSegment[2]['bearing'], currentbearing);
-
-        _navigationController.distance.value = distanceFromCurrentLocationToPolyline(
-            currentLocation, LatLng(currentSegment[1][0], currentSegment[1][1]));
-      }
-    });
-      return polylines;
-
+  void _addStreetPolyline(List<StreetModel> streets, int streetId, List<Polyline> polylines, Color color) {
+    StreetModel? street = findStreetById(streets, streetId);
+    if (street != null) {
+      polylines.add(Polyline(
+        points: street.streetCoordinates,
+        strokeWidth: 4.0,
+        color: color,
+      ));
+    }
   }
 
   String determineStreetDirection(double streetBearing, double currentHeading) {

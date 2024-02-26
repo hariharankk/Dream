@@ -91,11 +91,12 @@ void _showOptionsDialog(String reasonType) {
         TextButton(
           child: Text('Submit'),
           onPressed: () {
-            updateStreetDetails(_controller.selectedStreetIndex.value,'InActive',reasonType,controller.selectedOption.value).then((response) {
+           /* updateStreetDetails(_controller.selectedStreetIndex.value,'InActive',reasonType,controller.selectedOption.value).then((response) {
               print("Street updated successfully: $response");
             }).catchError((error) {
               print("Error updating street: $error");
             });
+            */
             _controller.resetSelectedStreetIndex();
             Get.back();
             // Close the dialog

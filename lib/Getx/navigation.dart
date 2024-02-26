@@ -7,11 +7,6 @@ class NavigationController extends GetxController {
   var distance = '100 m'.obs;
 
   // Update navigation data
-  void updateNavigation(String newDirection, String newStreetName, String newDistance) {
-    direction.value = newDirection;
-    streetName.value = newStreetName;
-    distance.value = newDistance;
-  }
 
 
 }
