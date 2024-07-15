@@ -11,8 +11,6 @@ class Repository {
   Future signinUser(String email, String password) =>
       apiProvider.signInWithEmail(email, password);
 
-  Future phonesigninUser(String phone, String verificationId) =>
-      apiProvider.signInWithOTP(phone, verificationId);
 
   Future currentuser() =>
       apiProvider.getCurrentUser();

@@ -30,7 +30,7 @@ class InvoiceScreen extends StatelessWidget {
                 crossAxisAlignment: pw.CrossAxisAlignment.end, // To align text to the right side
                 children: [
                   pw.Text(
-                    DateFormat('yyyy-MM-dd').format(transaction.transaction_time), // Displaying date
+                    DateFormat('yyyy-MM-dd').format(DateTime.parse(transaction.transaction_time!)), // Displaying date
                     style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
                   ),
                   pw.SizedBox(height: 10),  // Spacing between date and bill no.
@@ -68,19 +68,43 @@ class InvoiceScreen extends StatelessWidget {
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
             cellAlignment: pw.Alignment.center,
             cellStyle: pw.TextStyle(fontSize: 15),
-            headers: ['Item', 'Price', 'Stock', 'Discount'],
+            headers: ['Item', 'Price', 'Discount','Discount Price','Quantity', 'Total' ],
             data: <List<String>>[
               ...transaction.products.map(
-                      (item) => [item['name'], item['price'].toString(), item['quantity'].toString(), item['flatdiscount'].toString() ?? '0']
+                      (item) => [item['name'], item['price'].toString(), item['flatdiscount'].toString() ?? '0', (item['price']-item['flatdiscount']).toStringAsFixed(0), item['quantity'].toString(),((item['price']-item['flatdiscount'])*item['quantity']).toStringAsFixed(0)]
               ),
             ],
           ),
           pw.SizedBox(height: 20),
-          pw.Paragraph(text: 'Subtotal: ${cartController.subtotalValue}'),
-          pw.Paragraph(text: 'SGST (2.5%): ${cartController.SGSTValue}'),
-          pw.Paragraph(text: 'CGST (2.5%): ${cartController.CGSTValue}'),
-          pw.Paragraph(text: 'Discount: ${cartController.DiscountValue}'),
-          pw.Paragraph(text: 'Total: ${cartController.totalValue}'),
+          pw.Text(
+            'Sub-Total: ${cartController.subtotalValue}',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 4), // Add some spacing between lines
+          pw.Text(
+            'Total Discount: ${cartController.DiscountValue}',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'Total after Discount: ${cartController.totalafterdiscount}',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'SGST (2.5%): ${cartController.SGSTValue}',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'CGST (2.5%): ${cartController.CGSTValue}',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'Total: ${cartController.totalValue}',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -89,7 +113,6 @@ class InvoiceScreen extends StatelessWidget {
       onLayout: (PdfPageFormat format) async => pdf.save(),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +135,7 @@ class InvoiceScreen extends StatelessWidget {
         actions: [
           IconButton(onPressed: (){
             _generateInvoicePdf(transaction);
-            }, icon: Icon(Icons.print))
+          }, icon: Icon(Icons.print))
         ],
       ),
       body: Padding(
@@ -142,88 +165,169 @@ class InvoiceScreen extends StatelessWidget {
                   color: Colors.grey[100],
                   child: ClipPath(
                     clipper: ShapeBorderClipper(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6))),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
                     child: Container(
                       height: 100,
-                      child: Obx(() => Column(
+                      child: Column(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 20, right: 11.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Text(
-                                  'Items',
-                                  style: TextStyle(
-                                    fontSize: 20.0,
-                                    fontWeight: FontWeight.w600,
+                          Obx(() => Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: MediaQuery.of(context).size.width,
+                                ),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.vertical,
+                                  child: IntrinsicWidth(
+                                    child: Table(
+                                      columnWidths: {
+                                        0: FlexColumnWidth(6), // Increased width for Name
+                                        1: FlexColumnWidth(6), // Increased width for Price
+                                        2: FlexColumnWidth(6), // Increased width for Discount
+                                        3: FlexColumnWidth(6), // Increased width for Discount Price
+                                        4: FlexColumnWidth(6), // Increased width for Quantity
+                                        5: FlexColumnWidth(6), // Increased width for Total
+                                      },
+                                      border: TableBorder.all(),
+                                      children: [
+                                        TableRow(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Name',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Price',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Discount',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Discount Price',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Quantity',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Total',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        for (var item in cartController.cartItems) TableRow(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['name']}',
+                                                maxLines: 3,
+                                                overflow: TextOverflow.ellipsis,
+                                                softWrap: true,
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['price']}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['flatdiscount']}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${(item['price'] - item['flatdiscount']).toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['quantity']}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${((item['price'] - item['flatdiscount']) * item['quantity']).toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  'Price',
-                                  style: TextStyle(
-                                    fontSize: 20.0,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: cartController.cartItems.length,
-                              itemBuilder: (context, index) {
-                                final item = cartController.cartItems[index];
-                                return ListTile(
-                                  title: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible( // Wrapping the first Text widget with Flexible
-                                        child: Text(
-                                          '${item['name']}',
-                                          overflow: TextOverflow.ellipsis, // Using ellipsis in case text is too long
-                                          style: TextStyle(
-                                            fontSize: 10.0,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5.0,
-                                      ),
-                                      Text(
-                                        'Rs.${item['price']}',
-                                        style: TextStyle(
-                                          fontSize: 10.0,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5.0,
-                                      ),
-                                      Text(
-                                        '${item['quantity']}',
-                                        style: TextStyle(
-                                          fontSize: 10.0,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5.0,
-                                      ),
-                                      Text(
-                                        'Rs.${item['flatdiscount']}',
-                                        style: TextStyle(
-                                          fontSize: 10.0,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                );
-                              },
-                            ),
-                          ),
+                          ),)
                         ],
-                      )),
+                      ),
                     ),
                   ),
                 ),
@@ -235,7 +339,7 @@ class InvoiceScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Obx(() => Text(
-                    'Subtotal: Rs.${cartController.subtotalValue}',
+                    'Subtotal: Rs.${cartController.subtotalValue.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -243,7 +347,7 @@ class InvoiceScreen extends StatelessWidget {
                   )),
                   SizedBox(height: 8),
                   Text(
-                    'Flat Discount: - Rs.${cartController.DiscountValue}',
+                    'Flat Discount: - Rs.${cartController.DiscountValue.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -251,7 +355,7 @@ class InvoiceScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'SGST of 2.5%: Rs.${cartController.CGSTValue}',
+                    'SGST of 2.5%: Rs.${cartController.SGSTValue.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -259,7 +363,7 @@ class InvoiceScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'CGST of 2.5%: Rs.${cartController.CGSTValue}',
+                    'CGST of 2.5%: Rs.${cartController.CGSTValue.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -267,7 +371,7 @@ class InvoiceScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 16),
                   Obx(() => Text(
-                    'Total: Rs.${cartController.totalValue}',
+                    'Total: Rs.${cartController.totalValue.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 35.0,
                       fontWeight: FontWeight.w700,

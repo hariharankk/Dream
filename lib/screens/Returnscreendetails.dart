@@ -156,7 +156,6 @@ class returndetails extends StatelessWidget {
       name: product!.name,
       description: product!.description,
       price: price,
-      transaction_time: DateTime.now().toUtc(),
       returnquantity: remainingWeight,
       quantity: quanity,
       imgurl: imgURL!,
@@ -167,13 +166,15 @@ class returndetails extends StatelessWidget {
       idurl: transURL!,
     );
     Map<dynamic, dynamic> data = returnobj.toMap();
+    print(data);
     await apirepository.addreturn(data);
   }
 
   @override
   Widget build(BuildContext context) {
+    var productvalue = double.parse((product!.price!-product!.flatdiscount).toStringAsFixed(0));
     final ProductController productController = Get.put(ProductController(
-        productWeight: product!.weight!, productPrice: product!.price!));
+        productWeight: product!.weight!, productPrice: productvalue));
     return Scaffold(
       appBar: AppBar(
         title: Text('Return Details'),
@@ -351,7 +352,7 @@ class returndetails extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    '${DateFormat('dd/MM/yy HH:mm').format(productController.transactionDetails.value!.transaction_time)}',
+                                    '${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(productController.transactionDetails.value!.transaction_time!))}',
                                     style: TextStyle(
                                       fontSize: 16.0,
                                       color: Colors.deepOrangeAccent,
@@ -453,7 +454,7 @@ class returndetails extends StatelessWidget {
                           SizedBox(
                             width: 5,
                           ),
-                          ProductDetailCard('Price', '${product!.price} Rs'),
+                          ProductDetailCard('Price', '${productController.productPrice} Rs'),
                           SizedBox(
                             width: 5,
                           ),
@@ -465,7 +466,7 @@ class returndetails extends StatelessWidget {
                           Column(
                             children: [
                               Text(
-                                "Used",
+                                "Return weight",
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -492,8 +493,8 @@ class returndetails extends StatelessWidget {
                           SizedBox(
                             width: 5,
                           ),
-                          Obx(() => ProductDetailCard('Remaining',
-                              '${productController.remainingWeight} kg')),
+                          Obx(() => ProductDetailCard('used',
+                              '${productController.usedWeight} kg')),
                           SizedBox(
                             width: 5,
                           ),

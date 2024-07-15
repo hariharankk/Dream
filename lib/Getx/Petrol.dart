@@ -12,7 +12,7 @@ class Controller extends GetxController {
   RxDouble costPerLitre = 0.0.obs;
   RxDouble fuelFilledLitres = 0.0.obs;
 
-  double get totalAmount => costPerLitre.value * fuelFilledLitres.value;
+  double get totalAmount => double.parse((costPerLitre.value * fuelFilledLitres.value).toStringAsFixed(0));
 
   void setTransactionId(String value) {
     int? id = int.tryParse(value);

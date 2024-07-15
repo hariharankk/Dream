@@ -191,7 +191,7 @@ class StreetListView extends StatelessWidget {
     //showReasonPopup();
     dynamic variable = _controller.findSegment();
     if (variable != null && variable.length > 1) {
-      webOpenMapWithDirections(_locationController.currentLocation.value.latitude, _locationController.currentLocation.value.longitude, variable[0], variable[1]);
+      //webOpenMapWithDirections(_locationController.currentLocation.value.latitude, _locationController.currentLocation.value.longitude, variable[0], variable[1]);
     } else {
       // Handle the case where variable is null or doesn't have the expected data
       print('Error: Segment data is unavailable.');

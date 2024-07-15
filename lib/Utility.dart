@@ -1,7 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:html' as html; // Import the html package
+//import 'dart:html' as html; // Import the html package
 import 'package:latlong2/latlong.dart';
 
 class JWT{
@@ -39,7 +39,7 @@ Future<void> openMapWithDirections(double startLat, double startLng, double dest
   }
 }
 
-Future<void> webOpenMapWithDirections(double startLat, double startLng, double destLat, double destLng) async {
+/*Future<void> webOpenMapWithDirections(double startLat, double startLng, double destLat, double destLng) async {
   final String googleMapsUrl = "https://www.google.com/maps/dir/?api=1&origin=$startLat,$startLng&destination=$destLat,$destLng";
 
   print('Opening URL: $googleMapsUrl');
@@ -47,5 +47,5 @@ Future<void> webOpenMapWithDirections(double startLat, double startLng, double d
   // Open the URL in a new tab
   html.window.open(googleMapsUrl, '_blank');
 }
-
+*/
 LatLng COMPANY_LOCATION =LatLng(9.873120985915538, 78.13299116183676);

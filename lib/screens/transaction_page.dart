@@ -77,6 +77,7 @@ class _TransactionPageState extends State<TransactionPage> {
                                           var item = snapshot.data[index];
                                           return GestureDetector(
                                             onTap: (){
+                                              print(item.transaction_time);
                                               Get.to(InvoiceScreen(transaction: item));
                                             },
                                             child: Padding(
@@ -142,7 +143,7 @@ class _TransactionPageState extends State<TransactionPage> {
                                                             ),
                                                           ),
                                                           Text(
-                                                            '${DateFormat('dd/MM/yy HH:mm').format(item.transaction_time)}',
+                                                            '${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(item.transaction_time))}',
                                                             style: TextStyle(
                                                               fontSize: 16.0,
                                                             color: Colors.deepOrangeAccent,

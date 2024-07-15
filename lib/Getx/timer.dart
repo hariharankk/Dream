@@ -76,7 +76,7 @@ class CountdownController extends GetxController with WidgetsBindingObserver {
             List<Map<String, dynamic>> retrievedData = await retrieveData();
             retrievedData.removeAt(0);
             PolygonModel firstPolygon = PolygonModel.fromJson(retrievedData[0]);
-            webOpenMapWithDirections(_locationController.currentLocation.value.latitude, _locationController.currentLocation.value.longitude, firstPolygon.navigatingCoordinateEnd.longitude, firstPolygon.navigatingCoordinateEnd.latitude);
+            //webOpenMapWithDirections(_locationController.currentLocation.value.latitude, _locationController.currentLocation.value.longitude, firstPolygon.navigatingCoordinateEnd.longitude, firstPolygon.navigatingCoordinateEnd.latitude);
             streetBloc.fetchStreetsByPolygon(firstPolygon.polygonId);
             await storeData(retrievedData);
             remainingTime.value = Duration(minutes: firstPolygon.timer);

@@ -23,14 +23,13 @@ class UpiPaymentPage extends StatelessWidget {
       payment_method: 'upi',
       lat: '${position.latitude}',
       longi: '${position.longitude}',
-      transaction_time: DateTime.now().toUtc(),
       products: products,
     );
 
     var trans = transaction.toMap();
     transactionbloc.createTransaction(trans);
      isProcessing = false.obs;
-
+    cartController.clearCart();
     Get.offAll(() => QRCodeScanner());
   }
 

@@ -14,18 +14,18 @@ class Imagestorage {
 
   Future<dynamic> upload(File imageFile) async {
     Token = await jwt.read_token();
-    var stream = new http.ByteStream(
+    var stream =  http.ByteStream(
         DelegatingStream.typed(imageFile.openRead()));
     var length = await imageFile.length();
 
-    var uri = Uri.parse(SERVERURL + '/img-profile');
+    var uri = Uri.parse('$SERVERURL/img-profile');
 
-    var request = new http.MultipartRequest("POST", uri);
+    var request =  http.MultipartRequest("POST", uri);
     Map<String, String> headers = {
       'x-access-token': Token
     };
     request.headers.addAll(headers);
-    var multipartFile = new http.MultipartFile('file', stream, length,
+    var multipartFile =  http.MultipartFile('file', stream, length,
         filename: Path.basename(imageFile.path),
         contentType: MediaType('image', 'png')
     );
@@ -33,7 +33,6 @@ class Imagestorage {
     request.files.add(multipartFile);
     var response = await request.send();
     var responsevalue = await response.stream.bytesToString();
-    print(jsonDecode(responsevalue)['file_name']);
     return jsonDecode(responsevalue)['file_name'];
   }
 }

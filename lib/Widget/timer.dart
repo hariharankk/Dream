@@ -35,7 +35,7 @@ class CountdownTimerWidget extends StatelessWidget {
                   retrievedData.removeAt(0);
                   PolygonModel firstPolygon = PolygonModel.fromJson(retrievedData[0]);
                   streetBloc.fetchStreetsByPolygon(firstPolygon.polygonId);
-                  webOpenMapWithDirections(_locationController.currentLocation.value.latitude,_locationController.currentLocation.value.longitude,firstPolygon.navigatingCoordinateEnd.longitude,firstPolygon.navigatingCoordinateEnd.latitude);
+                  //webOpenMapWithDirections(_locationController.currentLocation.value.latitude,_locationController.currentLocation.value.longitude,firstPolygon.navigatingCoordinateEnd.longitude,firstPolygon.navigatingCoordinateEnd.latitude);
                   //openMapWithDirections(_locationController.currentLocation.value.latitude,_locationController.currentLocation.value.longitude,firstPolygon.navigatingCoordinateEnd.latitude,firstPolygon.navigatingCoordinateEnd.latitude);
                   await storeData(retrievedData);
                   _countdownController.remainingTime.value = Duration(minutes: firstPolygon.timer);

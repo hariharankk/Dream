@@ -15,9 +15,15 @@ import 'package:inventory/Getx/euler.dart';
 import 'package:inventory/Widget/street review.dart';
 import 'package:inventory/Getx/street review.dart';
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  await initializeControllers();
 
+  runApp(MyApp());
+}
+
+Future<void> initializeControllers() async {
   Get.put(LocationController());
   Get.put(FlagController());
   Get.put(StartController());
@@ -26,51 +32,51 @@ void main() {
   Get.put(StreetreviewController());
   Get.put(CountdownController());
   Get.put(ReasonController());
-
-
-  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return  GetMaterialApp(
+    return GetMaterialApp(
       theme: ThemeData(
         primaryColor: Colors.black,
       ),
-      home: MapScreen(),//MyHomePage(),
+      home: InitialScreen(), // MyHomePage(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  void initState() {
-    super.initState();
-    checkLoginStatus();
-
-  }
-
-  checkLoginStatus() async {
-      JWT jwt= JWT();
-      var Token = await jwt.read_token();
-      Token == null ? Get.to(LoginPage()) :  userBloc.currentuser().then((_){
-        (userBloc.getUserObject() != null) ? Get.to(QRCodeScanner()) : Get.to(LoginPage());
-      });
-  }
-
+class InitialScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white70,
-      body: Center(child: Container()),
+    return FutureBuilder(
+      future: checkLoginStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Colors.white70,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Colors.white70,
+            body: Center(child: Text('Error: ${snapshot.error}')),
+          );
+        } else {
+          return snapshot.data == true ? QRCodeScanner() : LoginPage();
+        }
+      },
     );
   }
-}
 
+  Future<bool> checkLoginStatus() async {
+    JWT jwt = JWT();
+    var token = await jwt.read_token();
+    if (token == null) {
+      return false;
+    }
+    await userBloc.currentuser();
+    return userBloc.getUserObject() != null;
+  }
+}

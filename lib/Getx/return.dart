@@ -41,14 +41,27 @@ class ProductController extends GetxController {
 
   // Call this function whenever user enters or updates the used weight
   void updateUsedWeight(String value) {
-    if(value.isNotEmpty) {
-      usedWeight.value = double.parse(value);
+    if (value.isNotEmpty) {
+      double parsedValue = double.parse(value);
+      if (parsedValue > productWeight) {
+        parsedValue = 0.0; // Limit the value to 5
+        // Show a Snackbar message to the user
+        Get.snackbar(
+          'Invalid Input',
+          'The entered value cannot be more than product weight.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+
+      remainingWeight.value = parsedValue;
 
       // Calculate remaining weight
-      remainingWeight.value = productWeight - usedWeight.value;
+      usedWeight.value = double.parse((productWeight - remainingWeight.value).toStringAsFixed(2));
+        // Convert back to double
 
-      // Calculate cost of used weight to be returned
-      costOfUsed.value = (productPrice / productWeight) * remainingWeight.value;
+// Calculate cost of used weight to be returned
+      costOfUsed.value = double.parse(((productPrice / productWeight) * remainingWeight.value).toStringAsFixed(0));
+        // Convert back to double
     } else {
       usedWeight.value = 0.0;
       remainingWeight.value = 0.0;

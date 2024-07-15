@@ -47,7 +47,7 @@ class FlagActionButton extends StatelessWidget {
         double destLat = COMPANY_LOCATION.latitude;
         double destLng = COMPANY_LOCATION.longitude;
         await openMapWithDirections(startLat, startLng, destLat, destLng);
-        await webOpenMapWithDirections(startLat, startLng, destLat, destLng);
+        //await webOpenMapWithDirections(startLat, startLng, destLat, destLng);
       } catch (e) {
         print(e);
       }
@@ -63,7 +63,7 @@ class FlagActionButton extends StatelessWidget {
       double destLng = currentSegment.longitude;
 
       try {
-        await webOpenMapWithDirections(startLat, startLng, destLat, destLng);
+        //await webOpenMapWithDirections(startLat, startLng, destLat, destLng);
       } catch (e) {
         // Handle any errors for map-related actions
       }

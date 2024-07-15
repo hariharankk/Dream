@@ -44,15 +44,6 @@ class UserBloc {
     }
   }
 
-  Future<void> phonesigninUser(
-      String phone, String verificationId) async {
-    try {
-      _user = await repository.phonesigninUser(phone, verificationId);
-      _userGetter.sink.add(_user);
-    } catch (e) {
-      throw e;
-    }
-  }
 
   Future<void> currentuser() async {
     try {

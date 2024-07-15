@@ -46,93 +46,175 @@ class InvoiceScreen extends StatelessWidget {
                   color: Colors.grey[100],
                   child: ClipPath(
                     clipper: ShapeBorderClipper(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6))),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
                     child: Container(
                       height: 100,
-                      child: Obx(() => Column(
+                      child: Column(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 20, right: 11.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Text(
-                                  'Items',
-                                  style: TextStyle(
-                                    fontSize: 20.0,
-                                    fontWeight: FontWeight.w600,
+                          Obx(() => Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: MediaQuery.of(context).size.width,
+                                ),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.vertical,
+                                  child: IntrinsicWidth(
+                                    child: Table(
+                                      columnWidths: {
+                                        0: FlexColumnWidth(6), // Increased width for Name
+                                        1: FlexColumnWidth(6), // Increased width for Price
+                                        2: FlexColumnWidth(6), // Increased width for Discount
+                                        3: FlexColumnWidth(6), // Increased width for Discount Price
+                                        4: FlexColumnWidth(6), // Increased width for Quantity
+                                        5: FlexColumnWidth(6), // Increased width for Total
+                                      },
+                                      border: TableBorder.all(),
+                                      children: [
+                                        TableRow(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Name',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Price',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Discount',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Discount Price',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Quantity',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                'Total',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        for (var item in cartController.cartItems) TableRow(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['name']}',
+                                                maxLines: 3,
+                                                overflow: TextOverflow.ellipsis,
+                                                softWrap: true,
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['price']}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['flatdiscount']}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${(item['price'] - item['flatdiscount']).toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${item['quantity']}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Text(
+                                                '${((item['price'] - item['flatdiscount']) * item['quantity']).toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  fontSize: 10.0,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  'Price',
-                                  style: TextStyle(
-                                    fontSize: 20.0,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: cartController.cartItems.length,
-                              itemBuilder: (context, index) {
-                                final item = cartController.cartItems[index];
-                                return ListTile(
-                                  title: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible( // Wrapping the first Text widget with Flexible
-                                        child: Text(
-                                          '${item['name']}',
-                                          overflow: TextOverflow.ellipsis, // Using ellipsis in case text is too long
-                                          style: TextStyle(
-                                            fontSize: 10.0,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5.0,
-                                      ),
-                                      Text(
-                                        'Rs.${item['price']}',
-                                        style: TextStyle(
-                                          fontSize: 10.0,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5.0,
-                                      ),
-                                      Text(
-                                        '${item['quantity']}',
-                                        style: TextStyle(
-                                          fontSize: 10.0,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5.0,
-                                      ),
-                                      Text(
-                                        'Rs.${item['flatdiscount']}',
-                                        style: TextStyle(
-                                          fontSize: 10.0,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                );
-                              },
-                            ),
-                          ),
+                          ),)
                         ],
-                      )),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 35.0),
               child: Column(

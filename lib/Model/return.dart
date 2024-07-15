@@ -7,7 +7,7 @@ class Returnprod {
   final String name;
   final String description;
   final double price;
-  final DateTime transaction_time;
+  DateTime? transaction_time;
   double returnquantity;
   double? quantity;
   String imgurl;
@@ -23,7 +23,7 @@ class Returnprod {
     required this.name,
     required this.description,
     required this.price,
-    required this.transaction_time,
+    this.transaction_time,
     required this.returnquantity,
     required this.quantity,
     required this.imgurl,
@@ -51,7 +51,7 @@ class Returnprod {
     map['longi'] = long;
     map['reason'] = reason;
     map['quantity'] = quantity;
-    map['transaction_time'] = transaction_time.toIso8601String();
+    map['transaction_time'] = transaction_time;
     return map;
   }
 

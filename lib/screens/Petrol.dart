@@ -83,12 +83,14 @@ class PetrolScreen extends StatelessWidget {
                                 TextButton(
                                   child: Text("OK"),
                                   onPressed: () {
+                                    controller.isProcessing.value = false;
                                     Get.back(); // Close the dialog
                                   },
                                 ),
                               ],
                             ),
                           );
+
                           return; // exit from the function so the rest of the code won't execute
                         }
                         String img = await imagestorage
@@ -105,6 +107,7 @@ class PetrolScreen extends StatelessWidget {
                           'morningurl': imgURL,
                         };
                         apirepository.createLogbookEntry(map);
+                        controller.isProcessing.value = false;
                         Get.offAll(QRCodeScanner());
                       })
                     ],
@@ -146,13 +149,16 @@ class PetrolScreen extends StatelessWidget {
                                 TextButton(
                                   child: Text("OK"),
                                   onPressed: () {
+                                    controller.isProcessing.value = false;
                                     Get.back(); // Close the dialog
                                   },
                                 ),
                               ],
                             ),
                           );
-                          return; // exit from the function so the rest of the code won't execute
+
+                          return;
+                          // exit from the function so the rest of the code won't execute
                         }
                         String img = await imagestorage
                             .upload(File(controller.pickedImage.value!.path));
@@ -168,6 +174,7 @@ class PetrolScreen extends StatelessWidget {
                           'nighturl': imgURL,
                         };
                         apirepository.updateNightKm(map);
+                        controller.isProcessing.value = false;
                         Get.offAll(QRCodeScanner());
                       })
                     ],
@@ -209,8 +216,7 @@ class PetrolScreen extends StatelessWidget {
                               Expanded(
                                 child: Obx(() {
                                   return Text(
-                                    'Total: ${controller.totalAmount}',
-                                    style: TextStyle(
+                                    'Total: ${controller.totalAmount}',                                    style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold),
                                   );
@@ -232,6 +238,9 @@ class PetrolScreen extends StatelessWidget {
                           buttonText: 'Take Picture of the Petrol Kilometer'),
                       ActionButtonRow(
                           onDiscardPressed: () {
+                            controller.fuelFilledLitres.value = 0.0;
+                            controller.costPerLitre.value = 0.0;
+
                             Get.offAll(QRCodeScanner());
                           },
                           onReturnPressed: () async {
@@ -250,12 +259,16 @@ class PetrolScreen extends StatelessWidget {
                                     TextButton(
                                       child: Text("OK"),
                                       onPressed: () {
+                                        controller.fuelFilledLitres.value = 0.0;
+                                        controller.costPerLitre.value = 0.0;
+                                        controller.isProcessing.value = false;
                                         Get.back(); // Close the dialog
                                       },
                                     ),
                                   ],
                                 ),
                               );
+
                               return; // exit from the function so the rest of the code won't execute
                             }
 
@@ -277,6 +290,10 @@ class PetrolScreen extends StatelessWidget {
                                   .value,
                             };
                             apirepository.updateFuelDetails(map);
+                            controller.fuelFilledLitres.value = 0.0;
+                            controller.costPerLitre.value = 0.0;
+
+                            controller.isProcessing.value = false;
                             Get.offAll(QRCodeScanner());
                           })
                     ],

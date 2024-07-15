@@ -33,11 +33,11 @@ class _ScannerPageState extends State<ScannerPage> {
         } else {
           Get.dialog(
             AlertDialog(
-              title: Text("Error"),
-              content: Text("Failed to retrieve product details."),
+              title: const Text("Error"),
+              content: const Text("Failed to retrieve product details."),
               actions: <Widget>[
                 TextButton(
-                  child: Text("OK"),
+                  child: const Text("OK"),
                   onPressed: () {
                     Get.back(); // Close the dialog
                   },
@@ -86,11 +86,11 @@ class _ScannerPageState extends State<ScannerPage> {
           return AlertDialog(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30.0)),
-            title: Text('Out of Stock'),
+            title: const Text('Out of Stock'),
             content: Text('${product!.name} is currently out of stock.'),
             actions: [
               ElevatedButton(
-                child: Text('Close'),
+                child: const Text('Close'),
                 onPressed: () {
                   scanResult = null;
                   Get.back();
@@ -107,7 +107,7 @@ class _ScannerPageState extends State<ScannerPage> {
           return AlertDialog(
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0)),
-            title: Text(
+            title: const Text(
               'Product Details',
             ),
             content: Padding(
@@ -119,46 +119,36 @@ class _ScannerPageState extends State<ScannerPage> {
                 children: <Widget>[
                   Text(
                     'Item   :   ${product!.name}',
-                    style: TextStyle(),
+                    style: const TextStyle(),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 5.0,
                   ),
                   Text(
                     'Price  :   ${product!.price}',
-                    style: TextStyle(),
+                    style: const TextStyle(),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 5.0,
                   ),
                   Text(
                     'Category :   ${product!.description}',
-                    style: TextStyle(),
+                    style: const TextStyle(),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 5.0,
                   ),
                   Text(
                     'Items Available  :   ${product!.stock}',
-                    style: TextStyle(),
+                    style: const TextStyle(),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 5.0,
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       ElevatedButton(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Add to cart',
-                            style: TextStyle(
-                              fontSize: 10.0,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
                           // This sets the color
@@ -171,21 +161,21 @@ class _ScannerPageState extends State<ScannerPage> {
                           scanResult = null;
                           Get.back();
                         },
-                      ),
-                      SizedBox(
-                        width: 5.0,
-                      ),
-                      ElevatedButton(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
+                        child: const Padding(
+                          padding:  EdgeInsets.all(8.0),
                           child: Text(
-                            'Cancel',
+                            'Add to cart',
                             style: TextStyle(
                               fontSize: 10.0,
                               color: Colors.white,
                             ),
                           ),
                         ),
+                      ),
+                      const SizedBox(
+                        width: 5.0,
+                      ),
+                      ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
                           // Use 'primary' for button color
@@ -198,6 +188,16 @@ class _ScannerPageState extends State<ScannerPage> {
                           scanResult = null;
                           Get.back();
                         },
+                        child: const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 10.0,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       )
                     ],
                   ),
@@ -215,7 +215,7 @@ class _ScannerPageState extends State<ScannerPage> {
   build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('Smart Checkout'),
+          title: const Text('Smart Checkout'),
           automaticallyImplyLeading: false,
           centerTitle: true,
           elevation: 5.0,
@@ -223,20 +223,20 @@ class _ScannerPageState extends State<ScannerPage> {
             Obx(() => badges.Badge(
               position: badges.BadgePosition.bottomEnd(bottom: 25, end: 1),
               badgeContent: Text('${cartController.cartValue}'),
-              badgeAnimation: badges.BadgeAnimation.rotation(
+              badgeAnimation: const badges.BadgeAnimation.rotation(
                 animationDuration: Duration(seconds: 1),
                 colorChangeAnimationDuration: Duration(seconds: 1),
                 loopAnimation: false,
                 curve: Curves.fastOutSlowIn,
                 colorChangeAnimationCurve: Curves.easeInCubic,
               ),
-              badgeStyle: badges.BadgeStyle(
+              badgeStyle: const badges.BadgeStyle(
                 shape: badges.BadgeShape.circle,
                 padding: EdgeInsets.all(7.0),
                 badgeColor: Colors.blue,
               ),
               child: IconButton(
-                icon: Icon(Icons.shopping_cart),
+                icon: const Icon(Icons.shopping_cart),
                 onPressed: () =>
                 Get.to(CartScreen()),
               ),
@@ -246,8 +246,8 @@ class _ScannerPageState extends State<ScannerPage> {
         body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
               child: Text(
                 'Scan To Purchase',
                 textAlign: TextAlign.center,
@@ -258,20 +258,21 @@ class _ScannerPageState extends State<ScannerPage> {
               ),
             ),
             Center(
-              child: Container(
+              child: SizedBox(
                   height: MediaQuery.of(context).size.height * 0.1,
                   width: MediaQuery.of(context).size.width * 0.4,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent, // color
                       elevation: 10.0,
-                      shape: RoundedRectangleBorder(
+                      shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(
                           Radius.circular(16.0),
                         ),
                       ),
                     ),
-                    child: Row(
+                    onPressed: _scanQR,
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         Icon(
@@ -293,7 +294,6 @@ class _ScannerPageState extends State<ScannerPage> {
                         Opacity(opacity: 0.0, child: Icon(Icons.camera_alt)),
                       ],
                     ),
-                    onPressed: _scanQR,
                   )),
             ),
           ],

@@ -21,14 +21,13 @@ class CashPaymentPage extends StatelessWidget {
       payment_method: 'cash',
       lat: '${position.latitude}',
       longi: '${position.longitude}',
-      transaction_time: DateTime.now().toUtc(),
       products: products,
     );
 
     var trans = transaction.toMap();
     transactionbloc.createTransaction(trans);
     isProcessing.value = false;
-
+    cartController.clearCart();
     Get.offAll(() => QRCodeScanner());
   }
 
