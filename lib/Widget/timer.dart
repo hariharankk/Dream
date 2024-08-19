@@ -6,7 +6,6 @@ import 'package:inventory/shared pref.dart';
 import 'package:inventory/Service/Bloc.dart';
 import 'package:inventory/Getx/euler.dart';
 import 'package:inventory/Getx/maps.dart';
-import 'package:inventory/Utility.dart';
 
 class CountdownTimerWidget extends StatelessWidget {
   final CountdownController _controller = Get.find<CountdownController>();

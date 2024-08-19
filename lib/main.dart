@@ -5,7 +5,6 @@ import 'package:inventory/screens/Login screen.dart';
 import 'package:inventory/Utility.dart';
 import 'package:inventory/screens/qr_scanner.dart';
 import 'package:inventory/Service/Bloc.dart';
-import 'package:inventory/screens/maps.dart';
 import 'package:inventory/Getx/maps.dart';
 import 'package:inventory/Widget/jktdirection.dart';
 import 'package:inventory/Widget/StartEnd.dart';
