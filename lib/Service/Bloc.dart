@@ -2,7 +2,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:inventory/Service/Repository.dart';
 import 'package:inventory/Model/Transaction.dart';
 import 'package:inventory/Model/user.dart';
-import 'package:inventory/Model/Streets.dart';
+
 
 
 
@@ -125,50 +125,3 @@ class TransactionBloc {
 
 TransactionBloc transactionbloc = TransactionBloc();
 
-
-class StreetBloc {
-  final PublishSubject<Map<dynamic,dynamic>> _streetDataGetter = PublishSubject<Map<dynamic,dynamic>>();
-  dynamic _streets;
-
-  StreetBloc._privateConstructor();
-
-  static final StreetBloc _instance = StreetBloc._privateConstructor();
-
-  factory StreetBloc() {
-    return _instance;
-  }
-
-  Stream<Map<dynamic,dynamic>> get streetDataStream => _streetDataGetter.stream;
-
-  dynamic getstreetsObject() {
-    return _streets;
-  }
-
-
-  Future<void> fetchStreetsByPolygon(String polygonId) async {
-    try {
-      _streets = await repository.fetchStreetsByPolygon(polygonId);
-
-      _streetDataGetter.sink.add(_streets);
-    } catch (e) {
-      _streetDataGetter.sink.addError(e);
-    }
-  }
-
-
-
-  Future updateStreet(int streetId, String delStatus, String delType, String delReason) async {
-    try {
-       await repository.updateStreet(streetId, delStatus, delType, delReason);
-       return ;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  dispose() {
-    _streetDataGetter.close();
-  }
-}
-
-StreetBloc streetBloc = StreetBloc();

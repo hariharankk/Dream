@@ -56,8 +56,8 @@ class _ReasonInputWidgetState extends State<ReasonInputWidget> {
           ElevatedButton(
             onPressed: _submitReason,
             style: ElevatedButton.styleFrom(
-              primary: Colors.blue, // background color
-              onPrimary: Colors.white, // text color
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.blue, // text color
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20.0),

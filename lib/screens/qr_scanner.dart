@@ -12,7 +12,7 @@ import 'package:inventory/Service/Repository.dart';
 import 'package:get/get.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:inventory/screens/ReturnScreen.dart';
-import 'package:inventory/screens/Petrol.dart';
+
 
 class QRCodeScanner extends StatefulWidget {
   @override
@@ -30,7 +30,7 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
     TransactionPage(),
     ProfilePage(),
     ReturnPage(),
-      PetrolScreen(),
+
   ];
 
   @override
@@ -136,7 +136,6 @@ class _QRCodeScannerState extends State<QRCodeScanner> {
           const Icon(Icons.library_books, color: Colors.white, size: 30),
           const Icon(Icons.account_circle, color: Colors.white, size: 30),
           Icon(MdiIcons.accountCancel, size: 30, color: Colors.white),
-          Icon(MdiIcons.fuel, size: 30, color: Colors.white),
         ],
         color: Colors.black,
         buttonBackgroundColor: Colors.black,

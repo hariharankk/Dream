@@ -5,33 +5,14 @@ import 'package:inventory/screens/Login screen.dart';
 import 'package:inventory/Utility.dart';
 import 'package:inventory/screens/qr_scanner.dart';
 import 'package:inventory/Service/Bloc.dart';
-import 'package:inventory/Getx/maps.dart';
-import 'package:inventory/Widget/jktdirection.dart';
-import 'package:inventory/Widget/StartEnd.dart';
-import 'package:inventory/Getx/navigation.dart';
-import 'package:inventory/Getx/timer.dart';
-import 'package:inventory/Getx/euler.dart';
-import 'package:inventory/Widget/street review.dart';
-import 'package:inventory/Getx/street review.dart';
+
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
 
-  await initializeControllers();
 
   runApp(MyApp());
 }
 
-Future<void> initializeControllers() async {
-  Get.put(LocationController());
-  Get.put(FlagController());
-  Get.put(StartController());
-  Get.put(NavigationController());
-  Get.put(EulerCircuit());
-  Get.put(StreetreviewController());
-  Get.put(CountdownController());
-  Get.put(ReasonController());
-}
 
 class MyApp extends StatelessWidget {
   @override
