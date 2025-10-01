@@ -80,15 +80,13 @@ class CartScreen extends StatelessWidget {
             pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
             cellAlignment: pw.Alignment.center,
             cellStyle: pw.TextStyle(fontSize: 15),
-            headers: ['Item', 'Price', 'Discount','Discount Price','Quantity', 'Total' ],
+            headers: ['Item', 'Price','Quantity', 'Total' ],
             data: <List<dynamic>>[
               ...transaction.map((item) => [
                 item.name,
                 item.price.toString(),
-                item.flatdiscount.toString() ?? '0',
-                (item.price - item.flatdiscount).toStringAsFixed(0),
                 item.quantity.toString(),
-                ((item.price - item.flatdiscount) * item.quantity).toStringAsFixed(0)
+                (item.price  * item.quantity).toStringAsFixed(0)
               ]),
             ],
           ),
@@ -98,16 +96,6 @@ class CartScreen extends StatelessWidget {
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 4), // Add some spacing between lines
-          pw.Text(
-            'Total Discount: ${cartController.DiscountValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            'Total after Discount: ${cartController.totalafterdiscount}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4),
           pw.Text(
             'SGST (2.5%): ${cartController.SGSTValue}',
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
@@ -203,13 +191,11 @@ class CartScreen extends StatelessWidget {
                                     child: Table(
                                       columnWidths: {
                                         0: FlexColumnWidth(6), // Increased width for Name
-                                        1: FlexColumnWidth(6), // Increased width for Price
-                                        2: FlexColumnWidth(6), // Increased width for Discount
-                                        3: FlexColumnWidth(6), // Increased width for Discount Price
-                                        4: FlexColumnWidth(6), // Increased width for Quantity
-                                        5: FlexColumnWidth(6), // Increased width for Total
-                                        6: FlexColumnWidth(6), // Slightly increased width for Reduce
-                                        7: FlexColumnWidth(6), // Slightly increased width for Delete
+                                        1: FlexColumnWidth(5), // Increased width for Price
+                                        2: FlexColumnWidth(5), // Increased width for Discount
+                                        3: FlexColumnWidth(5), // Increased width for Discount Price
+                                        4: FlexColumnWidth(5), // Increased width for Quantity
+                                        5: FlexColumnWidth(5), // Increased width for Total
                                       },
                                       border: TableBorder.all(),
                                       children: [
@@ -229,26 +215,6 @@ class CartScreen extends StatelessWidget {
                                               padding: const EdgeInsets.all(8.0),
                                               child: Text(
                                                 'Price',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Discount',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Discount Price',
                                                 style: TextStyle(
                                                   fontSize: 10.0,
                                                   fontWeight: FontWeight.bold,
@@ -323,24 +289,6 @@ class CartScreen extends StatelessWidget {
                                             Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: Text(
-                                                '${item.flatdiscount}',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                '${(item.price - item.flatdiscount).toStringAsFixed(0)}',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
                                                 '${item.quantity}',
                                                 style: TextStyle(
                                                   fontSize: 10.0,
@@ -350,7 +298,7 @@ class CartScreen extends StatelessWidget {
                                             Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: Text(
-                                                '${((item.price - item.flatdiscount) * item.quantity).toStringAsFixed(0)}',
+                                                '${(item.price * item.quantity).toStringAsFixed(0)}',
                                                 style: TextStyle(
                                                   fontSize: 10.0,
                                                 ),
@@ -402,14 +350,6 @@ class CartScreen extends StatelessWidget {
                 children: [
                   Obx(() => Text(
                     'Subtotal: Rs.${cartController.subtotalValue}',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )),
-                  SizedBox(height: 8),
-                  Obx(() => Text(
-                    'Flat Discount: - Rs.${cartController.DiscountValue}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,

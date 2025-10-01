@@ -284,10 +284,9 @@ class Apirepository {
       double cashTotal = data['cash_total'].toDouble();
       double upiTotal = data['upi_total'].toDouble();
       double totalReturnAmount = data['total_return_amount'].toDouble();
-      double Commision = data['commission'].toDouble();
+
       print(data['cash_on_hand']);
       double cashOnHand = data['cash_on_hand'].toDouble();
-      double fuelValueToday = data['fuel_value_today'].toDouble();
 
       return {
         'products': products,
@@ -295,9 +294,7 @@ class Apirepository {
         'cash_total': cashTotal,
         'upi_total': upiTotal,
         'total_return_amount': totalReturnAmount,
-        'Commision': Commision,
-        'fuel_value_today': fuelValueToday,
-        'cash_on_hand': cashOnHand
+         'cash_on_hand': cashOnHand
       };
       //} else {
       // If status is false, throw an exception with the provided message
@@ -415,106 +412,6 @@ class Apirepository {
       }
     } catch (e) {
       return null;
-    }
-  }
-
-  Future<dynamic> createLogbookEntry(Map<dynamic, dynamic> logbookData) async {
-    Token = await jwt.read_token();
-    if (Token == null) {
-      return null;
-    }
-
-    String url = '$SERVERURL/user/logbook/create';
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-          'x-access-token': Token!
-        },
-
-        body: jsonEncode(logbookData),
-      );
-
-      if (response.statusCode == 201) {
-        Map<String, dynamic> responseData = jsonDecode(response.body);
-        if (responseData['status'] == true) {
-          return responseData['id']; // Return the created logbook entry's ID
-        } else {
-          throw Exception(responseData['message']);
-        }
-      } else {
-        throw Exception('Failed to create logbook entry, status code: ${response
-            .statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to create logbook entry, exception thrown: $e');
-    }
-  }
-
-  Future<dynamic> updateFuelDetails(Map<dynamic, dynamic> fuelData) async {
-    Token = await jwt.read_token();
-    if (Token == null) {
-      return null;
-    }
-
-    String url = '$SERVERURL/user/logbook/update_fuel';
-    try {
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-          'x-access-token': Token!
-        },
-        body: jsonEncode(fuelData),
-      );
-
-      if (response.statusCode == 200) {
-        Map<String, dynamic> responseData = jsonDecode(response.body);
-        if (responseData['status'] == true) {
-          return true;
-        } else {
-          throw Exception(responseData['message']);
-        }
-      } else {
-        throw Exception('Failed to update fuel details, status code: ${response
-            .statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to update fuel details, exception thrown: $e');
-    }
-  }
-
-  Future<dynamic> updateNightKm(Map<dynamic, dynamic> nightKmData) async {
-    Token = await jwt.read_token();
-    if (Token == null) {
-      return null;
-    }
-    String url = '$SERVERURL/user/logbook/update_night_km';
-    try {
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-          'x-access-token': Token!
-        },
-        body: jsonEncode(nightKmData),
-      );
-
-      if (response.statusCode == 200) {
-        Map<String, dynamic> responseData = jsonDecode(response.body);
-        if (responseData['status'] == true) {
-          return true;
-        } else {
-          throw Exception(responseData['message']);
-        }
-      } else {
-        throw Exception(
-            'Failed to update night kilometer, status code: ${response
-                .statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to update night kilometer, exception thrown: $e');
     }
   }
 

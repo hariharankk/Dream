@@ -6,9 +6,8 @@ class CartController extends GetxController {
   var subtotalValue = 0.0.obs;
   var CGSTValue = 0.0.obs;
   var SGSTValue = 0.0.obs;
-  var DiscountValue = 0.0.obs;
   var totalValue = 0.0.obs;
-  var totalafterdiscount = 0.0.obs;
+
 
   void addProduct(Product product) {
     if (cartItems.any((element) => element.id == product.id)) {
@@ -45,20 +44,19 @@ class CartController extends GetxController {
 
   void updateValues() {
     // Calculate Subtotal
-    subtotalValue.value = double.parse(cartItems.fold(0.0, (sum, item) => sum + item.price * (item.quantity ?? 1)).toStringAsFixed(0));
+    subtotalValue.value = double.parse(
+        cartItems
+            .fold(0.0,
+                (sum, item) => sum + item.price * (item.quantity ?? 1))
+            .toStringAsFixed(0));
 
 // Calculate GST (Combined CGST and SGST as they are usually equal)
 
 // Calculate Discount
-    DiscountValue.value = double.parse(cartItems.fold(0.0, (sum, item) => sum + (item.flatdiscount ?? 0) * (item.quantity ?? 1)).toStringAsFixed(0));
-
-    totalafterdiscount.value = double.parse((subtotalValue.value-DiscountValue.value).toStringAsFixed(0));
-    SGSTValue.value = double.parse(((subtotalValue.value - DiscountValue.value) * 0.025).toStringAsFixed(2)); // 5% of subtotal (2.5% CGST + 2.5% SGST)
-
-    CGSTValue.value = double.parse(((subtotalValue.value - DiscountValue.value) * 0.025).toStringAsFixed(2)); // 5% of subtotal (2.5% CGST + 2.5% SGST)
-
+    SGSTValue.value = double.parse((subtotalValue.value * 0.025).toStringAsFixed(2));
+    CGSTValue.value = double.parse((subtotalValue.value * 0.025).toStringAsFixed(2));
 // Calculate Total
-    totalValue.value = double.parse((subtotalValue.value - DiscountValue.value + CGSTValue.value + SGSTValue.value).toStringAsFixed(0));
+    totalValue.value = double.parse((subtotalValue.value + CGSTValue.value + SGSTValue.value).toStringAsFixed(0));
   }
 
   void clearCart() {

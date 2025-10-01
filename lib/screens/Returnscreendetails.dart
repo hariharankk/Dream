@@ -172,7 +172,7 @@ class returndetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var productvalue = double.parse((product!.price!-product!.flatdiscount).toStringAsFixed(0));
+    var productvalue = double.parse(product!.price.toStringAsFixed(0));
     final ProductController productController = Get.put(ProductController(
         productWeight: product!.weight!, productPrice: productvalue));
     return Scaffold(

@@ -67,11 +67,9 @@ class InvoiceScreen extends StatelessWidget {
                                     child: Table(
                                       columnWidths: {
                                         0: FlexColumnWidth(6), // Increased width for Name
-                                        1: FlexColumnWidth(6), // Increased width for Price
-                                        2: FlexColumnWidth(6), // Increased width for Discount
-                                        3: FlexColumnWidth(6), // Increased width for Discount Price
-                                        4: FlexColumnWidth(6), // Increased width for Quantity
-                                        5: FlexColumnWidth(6), // Increased width for Total
+                                        1: FlexColumnWidth(5), // Increased width for Price
+                                        2: FlexColumnWidth(5), // Increased width for Discount
+                                        3: FlexColumnWidth(5), // Increased width for Discount Price
                                       },
                                       border: TableBorder.all(),
                                       children: [
@@ -91,26 +89,6 @@ class InvoiceScreen extends StatelessWidget {
                                               padding: const EdgeInsets.all(8.0),
                                               child: Text(
                                                 'Price',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Discount',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Discount Price',
                                                 style: TextStyle(
                                                   fontSize: 10.0,
                                                   fontWeight: FontWeight.bold,
@@ -165,24 +143,6 @@ class InvoiceScreen extends StatelessWidget {
                                             Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: Text(
-                                                '${item['flatdiscount']}',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                '${(item['price'] - item['flatdiscount']).toStringAsFixed(0)}',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
                                                 '${item['quantity']}',
                                                 style: TextStyle(
                                                   fontSize: 10.0,
@@ -192,7 +152,7 @@ class InvoiceScreen extends StatelessWidget {
                                             Padding(
                                               padding: const EdgeInsets.all(8.0),
                                               child: Text(
-                                                '${((item['price'] - item['flatdiscount']) * item['quantity']).toStringAsFixed(0)}',
+                                                '${((item['price']) * item['quantity']).toStringAsFixed(0)}',
                                                 style: TextStyle(
                                                   fontSize: 10.0,
                                                 ),
@@ -227,14 +187,6 @@ class InvoiceScreen extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   )),
-                  SizedBox(height: 8),
-                  Text(
-                    'Flat Discount: - Rs.${cartController.DiscountValue}',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                   SizedBox(height: 8),
                   Text(
                     'SGST of 2.5%: Rs.${cartController.CGSTValue}',
