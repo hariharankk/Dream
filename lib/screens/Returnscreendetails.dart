@@ -13,11 +13,10 @@ import 'package:inventory/Service/Bloc.dart';
 import 'package:inventory/Widget/product detail.dart';
 import 'package:inventory/Model/Product.dart';
 import 'package:inventory/Getx/return.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:intl/intl.dart';
 import 'package:inventory/screens/return screen transaction.dart';
+import 'package:inventory/Getx/thermal_printer_controller.dart';
+import 'package:inventory/Widget/printer_selector.dart';
+import 'package:intl/intl.dart';
 
 class returndetails extends StatelessWidget {
   returndetails({required this.product});
@@ -27,90 +26,65 @@ class returndetails extends StatelessWidget {
   Rx<XFile?> pickedImage = Rx<XFile?>(null);
   Rx<XFile?> transImage = Rx<XFile?>(null);
   final TextEditingController usedWeightController = TextEditingController();
+  final ThermalPrinterController printerController =
+  Get.isRegistered<ThermalPrinterController>()
+      ? Get.find<ThermalPrinterController>()
+      : Get.put(ThermalPrinterController(), permanent: true);
 
-  Future<void> _generateReturnDetailsPdf(
-      var refund, var remainingWeight, var transid) async {
-    final pw.Document pdf = pw.Document();
+  Future<void> _printReturnDetails(
+      BuildContext context, dynamic refund, dynamic remainingWeight, dynamic transid) async {
+    final double refundValue = _parseToDouble(refund);
+    final double remainingValue = _parseToDouble(remainingWeight);
+    final double usedWeightValue = double.tryParse(usedWeightController.text) ?? 0;
+    final double totalWeight = product?.weight ?? 0;
+    final double price = product?.price ?? 0;
+    final String locationText =
+    (lat != null && longi != null) ? 'Lat: $lat, Long: $longi' : '';
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          margin: pw.EdgeInsets.all(32.0),
-        ),
-        build: (pw.Context context) => [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text('RETURN DETAILS',
-                  style: pw.TextStyle(
-                      fontSize: 40, fontWeight: pw.FontWeight.bold)),
-              pw.Text(DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                  style: pw.TextStyle(
-                      fontSize: 20, fontWeight: pw.FontWeight.bold)),
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('Product:',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              pw.Text(product!.name),
-              pw.Text('Price: ${product!.price} Rs'),
-              pw.Text('Total Weight: ${product!.weight} kg'),
-              pw.Table(
-                border: pw.TableBorder.all(),
-                children: [
-                  pw.TableRow(
-                    children: [
-                      pw.Text('Detail',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Value',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    ],
-                  ),
-                  pw.TableRow(
-                    children: [
-                      pw.Text('Used:'),
-                      pw.Text('${usedWeightController.text} kg'),
-                    ],
-                  ),
-                  pw.TableRow(
-                    children: [
-                      pw.Text('Remaining:'),
-                      pw.Text('${remainingWeight} kg'),
-                    ],
-                  ),
-                  pw.TableRow(
-                    children: [
-                      pw.Text('Refund:'),
-                      pw.Text('${refund} Rs'),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Paragraph(text: 'Location: Latitude - $lat, Longitude - $longi'),
-          pw.SizedBox(height: 20),
-          pw.Paragraph(text: 'Reason for Return: $Reason'),
-          pw.Paragraph(text: 'Reason for Return: $transid'),
-          pw.SizedBox(height: 20),
-          pw.Image(
-              pw.MemoryImage(File(transImage.value!.path).readAsBytesSync())),
-          // Ensure you have the necessary permission to access files
-          pw.Image(
-              pw.MemoryImage(File(pickedImage.value!.path).readAsBytesSync())),
-          // Ensure you have the necessary permission to access files
-          pw.SizedBox(height: 20),
-        ],
-      ),
-    );
+    try {
+      if (!await printerController.isPrinterConnected) {
+        final bool? selected = await showPrinterSelector(context, printerController);
+        if (selected != true) {
+          return;
+        }
+      }
 
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
+      await printerController.printReturnDetails(
+        productName: product?.name ?? 'Unknown product',
+        productPrice: price,
+        totalWeight: totalWeight,
+        usedWeight: usedWeightValue,
+        remainingWeight: remainingValue,
+        refundAmount: refundValue,
+        reason: Reason ?? '',
+        transactionId: transid?.toString(),
+        location: locationText.isEmpty ? null : locationText,
+      );
+
+      Get.snackbar(
+        'Printer',
+        'Return details sent to printer',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (error) {
+      Get.snackbar(
+        'Printer',
+        error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  double _parseToDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value) ?? 0;
+    }
+    return 0;
   }
 
   _getLocation() async {
@@ -181,10 +155,12 @@ class returndetails extends StatelessWidget {
         actions: [
           IconButton(
               onPressed: () {
-                _generateReturnDetailsPdf(
-                    productController.costOfUsed.value,
-                    productController.remainingWeight.value,
-                    productController.transactionId.value);
+                _printReturnDetails(
+                  context,
+                  productController.costOfUsed.value,
+                  productController.remainingWeight.value,
+                  productController.transactionId.value,
+                );
               },
               icon: Icon(Icons.print))
         ],

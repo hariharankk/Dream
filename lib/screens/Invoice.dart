@@ -3,105 +3,75 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:get/get.dart';
 import 'package:inventory/Getx/Transaction.dart';
 import 'package:inventory/Model/Transaction.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:intl/intl.dart';
+import 'package:inventory/Getx/thermal_printer_controller.dart';
+import 'package:inventory/Widget/printer_selector.dart';
 
 class InvoiceScreen extends StatelessWidget {
   final TransactionController cartController = Get.put(TransactionController());
   Transaction transaction;
+
+  final ThermalPrinterController printerController =
+  Get.isRegistered<ThermalPrinterController>()
+      ? Get.find<ThermalPrinterController>()
+      : Get.put(ThermalPrinterController(), permanent: true);
   InvoiceScreen({required this.transaction});
 
-  Future<void> _generateInvoicePdf(Transaction transaction) async {
-    final pw.Document pdf = pw.Document();
+  DateTime? _parseTransactionDate(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    try {
+      return DateTime.parse(value);
+    } catch (_) {
+      return null;
+    }
+  }
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          margin: pw.EdgeInsets.all(32.0),
-        ),
-        build: (pw.Context context) => [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text('INVOICE', style: pw.TextStyle(fontSize: 40, fontWeight: pw.FontWeight.bold)),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end, // To align text to the right side
-                children: [
-                  pw.Text(
-                    DateFormat('yyyy-MM-dd').format(DateTime.parse(transaction.transaction_time!)), // Displaying date
-                    style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.SizedBox(height: 10),  // Spacing between date and bill no.
-                  pw.Text(
-                    'Bill No: ${transaction.id}', // Displaying bill number
-                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.normal),
-                  ),
-                ],
-              )
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text('From:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                  pw.Text('JKT HITECH RICE INDUSTRIES'),
-                  // Add address, phone number, etc. if needed
-                ],
-              ),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text('To:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                  pw.Text('Cash Sales'),
-                ],
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Table.fromTextArray(
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
-            cellAlignment: pw.Alignment.center,
-            cellStyle: pw.TextStyle(fontSize: 15),
-            headers: ['Item', 'Price','Quantity', 'Total' ],
-            data: <List<String>>[
-              ...transaction.products.map(
-                      (item) => [item['name'], item['price'].toString(), item['quantity'].toString(),(item['price']*item['quantity']).toStringAsFixed(0)]
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Text(
-            'Sub-Total: ${cartController.subtotalValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4), // Add some spacing between lines
-          pw.Text(
-            'SGST (2.5%): ${cartController.SGSTValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            'CGST (2.5%): ${cartController.CGSTValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            'Total: ${cartController.totalValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-        ],
-      ),
-    );
+  Future<void> _printInvoice(BuildContext context) async {
+    final List<Map<String, dynamic>> items = transaction.products
+        .map<Map<String, dynamic>>((dynamic item) {
+      if (item is Map) {
+        return {
+          'name': item['name'],
+          'price': item['price'],
+          'quantity': item['quantity'],
+        };
+      }
+      return {'name': item.toString(), 'price': 0, 'quantity': 0};
+    }).toList();
+    try {
+      if (!await printerController.isPrinterConnected) {
+        final bool? selected = await showPrinterSelector(context, printerController);
+        if (selected != true) {
+          return;
+        }
+      }
 
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
+      await printerController.printInvoice(
+        title: 'INVOICE',
+        billNo: transaction.id?.toString(),
+        createdAt: _parseTransactionDate(transaction.transaction_time),
+        items: items,
+        subtotal: cartController.subtotalValue.value,
+        sgst: cartController.SGSTValue.value,
+        cgst: cartController.CGSTValue.value,
+        total: cartController.totalValue.value,
+      );
+
+      Get.snackbar(
+        'Printer',
+        'Invoice sent to printer',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (error) {
+      Get.snackbar(
+        'Printer',
+        error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override
@@ -124,7 +94,7 @@ class InvoiceScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(onPressed: (){
-            _generateInvoicePdf(transaction);
+            _printInvoice(context);
           }, icon: Icon(Icons.print))
         ],
       ),
@@ -289,7 +259,7 @@ class InvoiceScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Obx(() => Text(
-                    'Subtotal: Rs.${cartController.subtotalValue.toStringAsFixed(2)}',
+                    'Subtotal: Rs.${cartController.subtotalValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -297,7 +267,7 @@ class InvoiceScreen extends StatelessWidget {
                   )),
                   SizedBox(height: 8),
                   Text(
-                    'SGST of 2.5%: Rs.${cartController.SGSTValue.toStringAsFixed(2)}',
+                    'SGST of 2.5%: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -305,7 +275,7 @@ class InvoiceScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'CGST of 2.5%: Rs.${cartController.CGSTValue.toStringAsFixed(2)}',
+                    'CGST of 2.5%: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -313,7 +283,7 @@ class InvoiceScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 16),
                   Obx(() => Text(
-                    'Total: Rs.${cartController.totalValue.toStringAsFixed(2)}',
+                    'Total: Rs.${cartController.totalValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 35.0,
                       fontWeight: FontWeight.w700,

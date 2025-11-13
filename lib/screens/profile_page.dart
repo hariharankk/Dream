@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:inventory/Service/Bloc.dart';
-
+import 'package:get/get.dart';
+import 'package:inventory/Model/Product.dart';
+import 'package:inventory/screens/update_product_price.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -8,7 +10,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-
   @override
   void initState() {
     // TODO: implement initState
@@ -17,8 +18,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,6 +32,9 @@ class _ProfilePageState extends State<ProfilePage> {
           } else {
             final Map<dynamic, dynamic> data = snapshot.data!;
 
+            final List<Product> products =
+                (data['products'] as List).cast<Product>();
+
             return Column(
               children: <Widget>[
                 Card(
@@ -43,15 +45,25 @@ class _ProfilePageState extends State<ProfilePage> {
                     padding: EdgeInsets.all(10),
                     child: Column(
                       children: <Widget>[
-                        Text('Cash Total: ${data['cash_total']}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text('Cash Total: ${data['cash_total']}',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold)),
                         SizedBox(height: 10),
-                        Text('Total Stock Value: ${data['total_stock_value']}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text('Total Stock Value: ${data['total_stock_value']}',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold)),
                         SizedBox(height: 10),
-                        Text('UPI Total: ${data['upi_total']}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text('UPI Total: ${data['upi_total']}',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold)),
                         SizedBox(height: 10),
-                        Text('Return Amount: ${data['total_return_amount']}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text('Return Amount: ${data['total_return_amount']}',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold)),
                         SizedBox(height: 10),
-                        Text('Cash on hand: ${data['cash_on_hand']}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text('Cash on hand: ${data['cash_on_hand']}',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -61,48 +73,66 @@ class _ProfilePageState extends State<ProfilePage> {
                     padding: EdgeInsets.all(10),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 1,
-                      childAspectRatio: 4 / 2, // I've adjusted this to provide more height
+                      childAspectRatio: 4 / 2,
+                      // I've adjusted this to provide more height
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),
-                    itemCount: (data['products'] as List).length,
+                    itemCount: products.length,
                     itemBuilder: (BuildContext context, int index) {
-                      final product = (data['products'] as List)[index];
-                      return Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(10),
-                          child: SingleChildScrollView( // Making the column scrollable
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  'Product Name: ${product.name}',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 4), // Reduced the height
-                                Text(
-                                  'Description: ${product.description}',
-                                  style: TextStyle(fontSize: 14),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 4), // Reduced the height
-                                Text(
-                                  'Price: ${product.price}',
-                                  style: TextStyle(fontSize: 14),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 4), // Reduced the height
-                                Text(
-                                  'Stock: ${product.stock}',
-                                  style: TextStyle(fontSize: 14),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                      final product = products[index];
+                      return InkWell(
+                        onTap: () async {
+                          final updatedProduct = await Get.to<Product>(
+                            () => UpdateProductPricePage(product: product),
+                          );
+                          if (updatedProduct != null) {
+                            Get.snackbar(
+                              'Product Updated',
+                              'Price updated for ${updatedProduct.name}',
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                          }
+                        },
+                        child: Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(10),
+                            child: SingleChildScrollView(
+                              // Making the column scrollable
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    'Product Name: ${product.name}',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 4), // Reduced the height
+                                  Text(
+                                    'Description: ${product.description}',
+                                    style: TextStyle(fontSize: 14),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 4), // Reduced the height
+                                  Text(
+                                    'Price: ${product.price}',
+                                    style: TextStyle(fontSize: 14),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 4), // Reduced the height
+                                  Text(
+                                    'Stock: ${product.stock}',
+                                    style: TextStyle(fontSize: 14),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

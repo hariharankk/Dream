@@ -134,6 +134,43 @@ class Apirepository {
     }
   }
 
+  Future<Product> updateProduct({
+    required int productId,
+    required Map<String, dynamic> data,
+  }) async {
+    Token = await jwt.read_token();
+    if (Token == null) {
+      throw Exception('Token is null');
+    }
+
+    final userId = userBloc.getUserObject().user.toString();
+    final String url =
+        '$SERVERURL/products/update?userid=$userId&productid=$productId';
+
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: <String, String>{
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          'x-access-token': Token!,
+        },
+        body: jsonEncode(data),
+      );
+
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && decoded['status'] == true) {
+        return Product.fromJson(decoded['product']);
+      } else {
+        final message = decoded['message'] ?? decoded['error'];
+        throw Exception(message ?? 'Failed to update product');
+      }
+    } catch (e) {
+      throw Exception('Failed to update product, exception thrown: $e');
+    }
+  }
+
 
   Future<List<dynamic>> getTransactions() async {
     Token = await jwt.read_token();

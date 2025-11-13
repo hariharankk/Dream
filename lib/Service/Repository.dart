@@ -20,7 +20,10 @@ class Repository {
   Future<Product> getProduct(String productId) => apiProvider.getProduct(productId);
   Future<List> getLocation(String userid) => apiProvider.getLocation(userid);
   Future addloc(Map<dynamic,dynamic> data) => apiProvider.addloc(data);
-
+  Future<Product> updateProduct({
+    required int productId,
+    required Map<String, dynamic> data,
+  }) => apiProvider.updateProduct(productId: productId, data: data);
 }
 
 final repository = Repository();

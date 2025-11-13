@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:get/get.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:intl/intl.dart';
 import 'package:inventory/Getx/cart screen.dart';
 import 'package:inventory/screens/Payment screen.dart';
+import 'package:inventory/Model/Product.dart';
+import 'package:inventory/Getx/thermal_printer_controller.dart';
+import 'package:inventory/Widget/printer_selector.dart';
 
 class CartScreen extends StatelessWidget {
   final CartController cartController = Get.find();
+  final ThermalPrinterController printerController =
+  Get.isRegistered<ThermalPrinterController>()
+      ? Get.find<ThermalPrinterController>()
+      : Get.put(ThermalPrinterController(), permanent: true);
 
   void _showEmptyCartDialog() {
     Get.dialog(
@@ -28,95 +31,56 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _generateInvoicePdf(var transaction) async {
-    final pw.Document pdf = pw.Document();
+  Future<void> _printQuotation(BuildContext context) async {
+    final List<Map<String, dynamic>> items = cartController.cartItems
+        .map<Map<String, dynamic>>((dynamic entry) {
+      if (entry is Product) {
+        return {
+          'name': entry.name,
+          'price': entry.price,
+          'quantity': entry.quantity ?? 1,
+        };
+      }
+      if (entry is Map) {
+        return {
+          'name': entry['name'],
+          'price': entry['price'],
+          'quantity': entry['quantity'] ?? 1,
+        };
+      }
+      return {'name': entry.toString(), 'price': 0, 'quantity': 0};
+    }).toList();
+    try {
+      if (!await printerController.isPrinterConnected) {
+        final bool? selected = await showPrinterSelector(context, printerController);
+        if (selected != true) {
+          return;
+        }
+      }
+      await printerController.printInvoice(
+        title: 'QUOTATION',
+        createdAt: DateTime.now(),
+        items: items,
+        subtotal: cartController.subtotalValue.value,
+        sgst: cartController.SGSTValue.value,
+        cgst: cartController.CGSTValue.value,
+        total: cartController.totalValue.value,
+      );
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          margin: pw.EdgeInsets.all(32.0),
-        ),
-        build: (pw.Context context) => [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text('Qotation',
-                  style: pw.TextStyle(
-                      fontSize: 40, fontWeight: pw.FontWeight.bold)),
-              pw.Text(
-                DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                // Assuming you want the current date
-                style:
-                pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text('From:',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                  pw.Text('JKT HITECH RICE INDUSTRIES'),
-                  // Add address, phone number, etc. if needed
-                ],
-              ),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text('To:',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                  pw.Text('Cash Sales'),
-                ],
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Table.fromTextArray(
-            headerStyle:
-            pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
-            cellAlignment: pw.Alignment.center,
-            cellStyle: pw.TextStyle(fontSize: 15),
-            headers: ['Item', 'Price','Quantity', 'Total' ],
-            data: <List<dynamic>>[
-              ...transaction.map((item) => [
-                item.name,
-                item.price.toString(),
-                item.quantity.toString(),
-                (item.price  * item.quantity).toStringAsFixed(0)
-              ]),
-            ],
-          ),
-          pw.SizedBox(height: 20),
-          pw.Text(
-            'Sub-Total: ${cartController.subtotalValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4), // Add some spacing between lines
-          pw.Text(
-            'SGST (2.5%): ${cartController.SGSTValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            'CGST (2.5%): ${cartController.CGSTValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            'Total: ${cartController.totalValue}',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
+      Get.snackbar(
+        'Printer',
+        'Quotation sent to printer',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (error) {
+      Get.snackbar(
+        'Printer',
+        error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override
@@ -137,7 +101,7 @@ class CartScreen extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
-              _generateInvoicePdf(cartController.cartItems.value);
+              _printQuotation(context);
             },
             icon: Icon(Icons.print),
           ),
@@ -349,7 +313,7 @@ class CartScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Obx(() => Text(
-                    'Subtotal: Rs.${cartController.subtotalValue}',
+                    'Subtotal: Rs.${cartController.subtotalValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -357,7 +321,7 @@ class CartScreen extends StatelessWidget {
                   )),
                   SizedBox(height: 8),
                   Obx(() => Text(
-                    'SGST of 2.5%: Rs.${cartController.SGSTValue}',
+                    'SGST of 2.5%: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -365,7 +329,7 @@ class CartScreen extends StatelessWidget {
                   )),
                   SizedBox(height: 8),
                   Obx(() => Text(
-                    'CGST of 2.5%: Rs.${cartController.CGSTValue}',
+                    'CGST of 2.5%: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 20.0,
                       fontWeight: FontWeight.w600,
@@ -373,7 +337,7 @@ class CartScreen extends StatelessWidget {
                   )),
                   SizedBox(height: 16),
                   Obx(() => Text(
-                    'Total: Rs.${cartController.totalValue}',
+                    'Total: Rs.${cartController.totalValue.value.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 35.0,
                       fontWeight: FontWeight.w700,
