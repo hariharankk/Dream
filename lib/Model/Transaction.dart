@@ -9,6 +9,9 @@ class Transaction {
   final double? total;
   final List<dynamic> products;
   int? userid;
+  final String? customerName;
+  final String? customerAddress;
+  final String? customerPhone;
 
 
   Transaction({
@@ -20,6 +23,9 @@ class Transaction {
     required this.products,
     this.total,
     this.userid,
+    this.customerName,
+    this.customerAddress,
+    this.customerPhone,
   });
 
 
@@ -32,6 +38,9 @@ class Transaction {
     map['lat'] = lat;
     map['longi'] = longi;
     map['products']=products;
+    if (customerName != null) map['customer_name'] = customerName;
+    if (customerAddress != null) map['customer_address'] = customerAddress;
+    if (customerPhone != null) map['customer_phone'] = customerPhone;
     return map;
 
   }
@@ -49,6 +58,9 @@ class Transaction {
         products: map['products'],
         total:  map['total'].toDouble(),
         userid: map['user_id'],
+        customerName: map['customer_name'] as String?,
+        customerAddress: map['customer_address'] as String?,
+        customerPhone: map['customer_phone'] as String?,
     );
   }
 

@@ -1,27 +1,42 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:inventory/Getx/cart screen.dart';
-import 'package:inventory/screens/Payment screen.dart';
 import 'package:inventory/Model/Product.dart';
-import 'package:inventory/Getx/thermal_printer_controller.dart';
-import 'package:inventory/Widget/printer_selector.dart';
+import 'package:inventory/Service/pdf_invoice_service.dart';
+import 'package:inventory/screens/Payment screen.dart';
+import 'package:inventory/Service/pdf_invoice_service.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
+  CartScreen({Key? key}) : super(key: key);
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+class _CartScreenState extends State<CartScreen> {
   final CartController cartController = Get.find();
-  final ThermalPrinterController printerController =
-  Get.isRegistered<ThermalPrinterController>()
-      ? Get.find<ThermalPrinterController>()
-      : Get.put(ThermalPrinterController(), permanent: true);
+  final TextEditingController _phoneController = TextEditingController();
+  final PdfInvoiceService _pdfInvoiceService = PdfInvoiceService();
+  bool _isGenerating = false;
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   void _showEmptyCartDialog() {
     Get.dialog(
       AlertDialog(
-        title: Text('Cart is empty'),
-        content: Text('Please enter cart items'),
+        title: const Text('Cart is empty'),
+        content: const Text('Please enter cart items'),
         actions: <Widget>[
           TextButton(
-            child: Text('OK'),
+            child: const Text('OK'),
             onPressed: () {
               Get.back();
             },
@@ -31,9 +46,8 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _printQuotation(BuildContext context) async {
-    final List<Map<String, dynamic>> items = cartController.cartItems
-        .map<Map<String, dynamic>>((dynamic entry) {
+  List<Map<String, dynamic>> _buildCartItems() {
+    return cartController.cartItems.map<Map<String, dynamic>>((dynamic entry) {
       if (entry is Product) {
         return {
           'name': entry.name,
@@ -49,15 +63,32 @@ class CartScreen extends StatelessWidget {
         };
       }
       return {'name': entry.toString(), 'price': 0, 'quantity': 0};
-    }).toList();
+    }).toList();}
+
+  double _parseDouble(dynamic value) {
+    if (value == null) {
+      return 0.0;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  Future<File?> _generateQuotationPdf() async {
+    if (cartController.cartItems.isEmpty) {
+      _showEmptyCartDialog();
+      return null;
+    }
+    final List<Map<String, dynamic>> items = _buildCartItems();
     try {
-      if (!await printerController.isPrinterConnected) {
-        final bool? selected = await showPrinterSelector(context, printerController);
-        if (selected != true) {
-          return;
-        }
-      }
-      await printerController.printInvoice(
+      setState(() {
+        _isGenerating = true;
+      });
+      return await _pdfInvoiceService.generateInvoice(
         title: 'QUOTATION',
         createdAt: DateTime.now(),
         items: items,
@@ -65,17 +96,125 @@ class CartScreen extends StatelessWidget {
         sgst: cartController.SGSTValue.value,
         cgst: cartController.CGSTValue.value,
         total: cartController.totalValue.value,
+      );  } catch (error) {
+      Get.snackbar(
+        'Quotation',
+        error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
       );
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+    }
+  }
+
+  String _buildSummaryMessage() {
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln('Quotation generated on ${formatter.format(DateTime.now())}');
+    for (final Map<String, dynamic> item in _buildCartItems()) {
+      final double price = _parseDouble(item['price']);
+      final double quantity = _parseDouble(item['quantity']);
+      buffer.writeln(
+        "${item['name']} x${quantity.toStringAsFixed(quantity.truncateToDouble() == quantity ? 0 : 2)} - Rs ${price.toStringAsFixed(2)}",
+      );
+    }
+    buffer.writeln(
+        'Subtotal: Rs ${cartController.subtotalValue.value.toStringAsFixed(2)}');
+    buffer.writeln(
+        'SGST: Rs ${cartController.SGSTValue.value.toStringAsFixed(2)}');
+    buffer.writeln(
+        'CGST: Rs ${cartController.CGSTValue.value.toStringAsFixed(2)}');
+    buffer.writeln(
+        'Total: Rs ${cartController.totalValue.value.toStringAsFixed(2)}');
+
+    final List<String> words = buffer
+        .toString()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
+    if (words.length <= 160) {
+      return buffer.toString().trim();
+    }
+    return words.take(160).join(' ');
+  }
+
+  Future<void> _sharePdfViaWhatsApp() async {
+    final String phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
 
       Get.snackbar(
-        'Printer',
-        'Quotation sent to printer',
+        'WhatsApp',
+        'Enter the customer\'s phone number to continue.',
         snackPosition: SnackPosition.BOTTOM,
       );
+      return;
+    }
+    final File? pdfFile = await _generateQuotationPdf();
+    if (pdfFile == null) {
+      return;
+    }
+
+    final String message = _buildSummaryMessage();
+
+    try {
+      final ShareResult result = await Share.shareXFiles(
+        <XFile>[XFile(pdfFile.path, mimeType: 'application/pdf')],
+        text: message,
+        subject: 'Quotation',
+      );
+
+      if (result.status == ShareResultStatus.success) {
+        final Uri whatsappUri = Uri.parse(
+          'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9+]'), '')}?text=${Uri.encodeComponent(message)}',
+        );
+        if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+          Get.snackbar(
+            'WhatsApp',
+            'Quotation shared. Unable to open WhatsApp automatically.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+      }
     } catch (error) {
       Get.snackbar(
-        'Printer',
+        'whatsapp',
         error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> _sendSms() async {
+    final String phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      Get.snackbar(
+        'SMS',
+        'Enter the customer\'s phone number to continue.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final String message = _buildSummaryMessage();
+    final Uri smsUri = Uri(
+      scheme: 'sms',
+      path: phone,
+      queryParameters: <String, String>{'body': message},
+    );
+
+    if (!await launchUrl(smsUri)) {
+      Get.snackbar(
+        'SMS',
+        'Unable to open the SMS application.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
@@ -87,7 +226,7 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Smart Checkout'),
+        title: const Text('Smart Checkout'),
         centerTitle: true,
         elevation: 5.0,
         leading: TextButton(
@@ -100,10 +239,14 @@ class CartScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              _printQuotation(context);
-            },
-            icon: Icon(Icons.print),
+            onPressed: _isGenerating ? null : _sharePdfViaWhatsApp,
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Share quotation via WhatsApp',
+          ),
+          IconButton(
+            onPressed: _sendSms,
+            icon: const Icon(Icons.sms),
+            tooltip: 'Send quotation via SMS',
           ),
         ],
       ),
@@ -114,6 +257,23 @@ class CartScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Customer phone number',
+                  prefixIcon: Icon(Icons.phone),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            if (_isGenerating)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                child: LinearProgressIndicator(),
+              ),
             Padding(
               padding: const EdgeInsets.only(top: 16.0),
               child: Text(

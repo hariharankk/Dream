@@ -1,134 +1,294 @@
 import 'package:flutter/material.dart';
-import 'package:inventory/screens/qr_scanner.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:inventory/Widget/reason.dart';
 import 'dart:io';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:inventory/Getx/return.dart';
+import 'package:inventory/Model/Product.dart';
 import 'package:inventory/Model/return.dart';
 import 'package:inventory/Service/File storage.dart';
+import 'package:inventory/Service/pdf_invoice_service.dart';
 import 'package:inventory/Service/Api Service.dart';
 import 'package:inventory/Service/Bloc.dart';
 import 'package:inventory/Widget/product detail.dart';
-import 'package:inventory/Model/Product.dart';
-import 'package:inventory/Getx/return.dart';
-import 'package:inventory/screens/return screen transaction.dart';
-import 'package:inventory/Getx/thermal_printer_controller.dart';
-import 'package:inventory/Widget/printer_selector.dart';
-import 'package:intl/intl.dart';
+import 'package:inventory/Widget/reason.dart';
+import 'package:inventory/screens/Invoice.dart';
+import 'package:inventory/screens/qr_scanner.dart';
 
-class returndetails extends StatelessWidget {
+
+class returndetails extends StatefulWidget {
   returndetails({required this.product});
 
-  Product? product;
-  String? lat, longi, Reason, imgURL, transURL;
-  Rx<XFile?> pickedImage = Rx<XFile?>(null);
-  Rx<XFile?> transImage = Rx<XFile?>(null);
-  final TextEditingController usedWeightController = TextEditingController();
-  final ThermalPrinterController printerController =
-  Get.isRegistered<ThermalPrinterController>()
-      ? Get.find<ThermalPrinterController>()
-      : Get.put(ThermalPrinterController(), permanent: true);
+  final Product? product;
 
-  Future<void> _printReturnDetails(
-      BuildContext context, dynamic refund, dynamic remainingWeight, dynamic transid) async {
-    final double refundValue = _parseToDouble(refund);
-    final double remainingValue = _parseToDouble(remainingWeight);
-    final double usedWeightValue = double.tryParse(usedWeightController.text) ?? 0;
-    final double totalWeight = product?.weight ?? 0;
-    final double price = product?.price ?? 0;
+  @override
+  State<returndetails> createState() => _returndetailsState();
+}
+
+class _returndetailsState extends State<returndetails> {
+
+String? lat, longi, Reason, imgURL, transURL;
+final Rx<XFile?> pickedImage = Rx<XFile?>(null);
+final Rx<XFile?> transImage = Rx<XFile?>(null);
+final TextEditingController usedWeightController = TextEditingController();
+final TextEditingController _phoneController = TextEditingController();
+final PdfInvoiceService _pdfInvoiceService = PdfInvoiceService();
+
+late final ProductController productController;
+bool _isGenerating = false;
+
+@override
+void initState() {
+  super.initState();
+  final double productWeight = widget.product?.weight ?? 0;
+  final double productPrice = widget.product?.price ?? 0;
+  productController = Get.put(
+    ProductController(
+      productWeight: productWeight,
+      productPrice: productPrice,
+    ),
+  );
+}
+
+@override
+void dispose() {
+  usedWeightController.dispose();
+  _phoneController.dispose();
+  super.dispose();
+}
+
+double _parseToDouble(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
+Future<void> _getLocation() async {
+  final Position position = await Geolocator.getCurrentPosition();
+  setState(() {
+    lat = position.latitude.toString();
+    longi = position.longitude.toString();
+  });
+}
+
+Future<void> _takePicture() async {
+  final ImagePicker picker = ImagePicker();
+  final XFile? pickedImageValue = await picker.pickImage(
+    source: ImageSource.camera,
+    imageQuality: 100,
+    preferredCameraDevice: CameraDevice.rear,
+  );
+  pickedImage(pickedImageValue);
+}
+
+Future<void> _takePicture1() async {
+  final ImagePicker picker = ImagePicker();
+  final XFile? pickedImageValue = await picker.pickImage(
+    source: ImageSource.camera,
+    imageQuality: 100,
+    preferredCameraDevice: CameraDevice.rear,
+  );
+  transImage(pickedImageValue);
+}
+
+Future<File?> _generateReturnPdf() async {
+  final double refundValue = _parseToDouble(productController.costOfUsed.value);
+  final double returnWeightValue =
+  _parseToDouble(productController.remainingWeight.value);
+  final double usedWeightValue =
+      double.tryParse(usedWeightController.text) ?? 0;
+  final double totalWeight = widget.product?.weight ?? 0;
+  final double price = widget.product?.price ?? 0;
     final String locationText =
     (lat != null && longi != null) ? 'Lat: $lat, Long: $longi' : '';
-
+  final String? transactionId =
+  productController.transactionId.value == 0
+      ? null
+      : productController.transactionId.value.toString();
+  final DateTime? createdAt = productController.transactionDetails.value
+      ?.transaction_time !=
+      null
+      ? DateTime.tryParse(
+      productController.transactionDetails.value!.transaction_time!)
+      : null;
     try {
-      if (!await printerController.isPrinterConnected) {
-        final bool? selected = await showPrinterSelector(context, printerController);
-        if (selected != true) {
-          return;
-        }
-      }
-
-      await printerController.printReturnDetails(
-        productName: product?.name ?? 'Unknown product',
+      setState(() {
+        _isGenerating = true;
+      });
+      return await _pdfInvoiceService.generateReturnSummary(
+        productName: widget.product?.name ?? 'Unknown product',
         productPrice: price,
         totalWeight: totalWeight,
         usedWeight: usedWeightValue,
-        remainingWeight: remainingValue,
+        returnWeight: returnWeightValue,
         refundAmount: refundValue,
         reason: Reason ?? '',
-        transactionId: transid?.toString(),
+        transactionId: transactionId,
         location: locationText.isEmpty ? null : locationText,
-      );
-
-      Get.snackbar(
-        'Printer',
-        'Return details sent to printer',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+        createdAt: createdAt,      );
     } catch (error) {
       Get.snackbar(
-        'Printer',
+        'Return',
         error.toString(),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
     }
   }
 
-  double _parseToDouble(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
+String _buildSummaryMessage() {
+  final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
+  final DateTime timestamp = productController.transactionDetails.value
+      ?.transaction_time !=
+      null
+      ? DateTime.parse(
+      productController.transactionDetails.value!.transaction_time!)
+      : DateTime.now();
+  final StringBuffer buffer = StringBuffer();
+  buffer.writeln(
+      'Return details for ${widget.product?.name ?? 'product'} on ${formatter.format(timestamp)}');
+  if (productController.transactionId.value != 0) {
+    buffer.writeln('Transaction ID: ${productController.transactionId.value}');
+  }
+  final double totalWeight = widget.product?.weight ?? 0;
+  buffer.writeln('Total weight: ${totalWeight.toStringAsFixed(2)} kg');
+  buffer.writeln(
+      'Used weight: ${productController.usedWeight.value.toStringAsFixed(2)} kg');
+  buffer.writeln(
+      'Return weight: ${productController.remainingWeight.value.toStringAsFixed(2)} kg');
+  buffer.writeln(
+      'Refund: Rs ${productController.costOfUsed.value.toStringAsFixed(2)}');
+  if (Reason != null && Reason!.isNotEmpty) {
+    buffer.writeln('Reason: $Reason');
+  }
+  if (lat != null && longi != null) {
+    buffer.writeln('Location: Lat $lat, Long $longi');
+}
+
+
+
+final List<String> words = buffer
+    .toString()
+    .split(RegExp(r'\s+'))
+    .where((word) => word.isNotEmpty)
+    .toList();
+if (words.length <= 160) {
+return buffer.toString().trim();
+}
+return words.take(160).join(' ');
+  }
+
+Future<void> _shareReturnViaWhatsApp() async {
+  final String phone = _phoneController.text.trim();
+  if (phone.isEmpty) {
+    Get.snackbar(
+      'WhatsApp',
+      'Enter the customer\'s phone number to continue.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+    return;
+  }
+
+  final File? pdfFile = await _generateReturnPdf();
+  if (pdfFile == null) {
+    return;
+  }
+
+  final String message = _buildSummaryMessage();
+
+  try {
+    final ShareResult result = await Share.shareXFiles(
+      <XFile>[XFile(pdfFile.path, mimeType: 'application/pdf')],
+      text: message,
+      subject: 'Return details',
+    );
+
+    if (result.status == ShareResultStatus.success) {
+      final Uri whatsappUri = Uri.parse(
+        'https://wa.me/${phone.replaceAll(RegExp(r'[^0-9+]'), '')}?text=${Uri.encodeComponent(message)}',
+      );
+      if (!await launchUrl(whatsappUri, mode: LaunchMode.externalApplication)) {
+        Get.snackbar(
+          'WhatsApp',
+          'Return details shared. Unable to open WhatsApp automatically.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
-    if (value is String) {
-      return double.tryParse(value) ?? 0;
-    }
-    return 0;
+  } catch (error) {
+    Get.snackbar(
+      'WhatsApp',
+      error.toString(),
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.redAccent,
+      colorText: Colors.white,
+    );
+  }
+}
+
+Future<void> _sendSms() async {
+  final String phone = _phoneController.text.trim();
+  if (phone.isEmpty) {
+    Get.snackbar(
+      'SMS',
+      'Enter the customer\'s phone number to continue.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+    return;
   }
 
-  _getLocation() async {
-    Position position = await Geolocator.getCurrentPosition();
-    lat = position.latitude.toString();
-    longi = position.longitude.toString();
-  }
+  final String message = _buildSummaryMessage();
+  final Uri smsUri = Uri(
+    scheme: 'sms',
+    path: phone,
+    queryParameters: <String, String>{'body': message},
+  );
 
-  Future<void> _takePicture() async {
-    final picker = ImagePicker();
-    final pickedImageValue = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 100,
-        preferredCameraDevice: CameraDevice.rear);
-    pickedImage(pickedImageValue);
+  if (!await launchUrl(smsUri)) {
+    Get.snackbar(
+      'SMS',
+      'Unable to open the SMS application.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.redAccent,
+      colorText: Colors.white,
+    );
   }
-
-  Future<void> _takePicture1() async {
-    final picker = ImagePicker();
-    final pickedImageValue = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 100,
-        preferredCameraDevice: CameraDevice.rear);
-    transImage(pickedImageValue);
-  }
+}
 
   Future<void> _complete(
       var quanity, var remainingWeight, var price, var transid) async {
-    Imagestorage imagestorage = Imagestorage();
-    Apirepository apirepository = Apirepository();
-    String img = await imagestorage.upload(File(pickedImage.value!.path));
+    final Imagestorage imagestorage = Imagestorage();
+    final Apirepository apirepository = Apirepository();
+    final String img = await imagestorage.upload(File(pickedImage.value!.path));
     if (img != null || img != "") {
       imgURL = SERVERURL + '/image/' + img;
     }
 
-    String img1 = await imagestorage.upload(File(transImage.value!.path));
+    final String img1 = await imagestorage.upload(File(transImage.value!.path));
     if (img1 != null || img1 != "") {
       transURL = SERVERURL + '/image/' + img1;
     }
 
-    Returnprod returnobj = Returnprod(
+    final Returnprod returnobj = Returnprod(
       user_id: userBloc.getUserObject().user,
-      name: product!.name,
-      description: product!.description,
+      name: widget.product!.name,
+      description: widget.product!.description,
       price: price,
       returnquantity: remainingWeight,
       quantity: quanity,
@@ -139,31 +299,27 @@ class returndetails extends StatelessWidget {
       trans_id: transid!,
       idurl: transURL!,
     );
-    Map<dynamic, dynamic> data = returnobj.toMap();
+    final Map<dynamic, dynamic> data = returnobj.toMap();
     print(data);
     await apirepository.addreturn(data);
   }
 
   @override
   Widget build(BuildContext context) {
-    var productvalue = double.parse(product!.price.toStringAsFixed(0));
-    final ProductController productController = Get.put(ProductController(
-        productWeight: product!.weight!, productPrice: productvalue));
     return Scaffold(
       appBar: AppBar(
         title: Text('Return Details'),
         actions: [
           IconButton(
-              onPressed: () {
-                _printReturnDetails(
-                  context,
-                  productController.costOfUsed.value,
-                  productController.remainingWeight.value,
-                  productController.transactionId.value,
-                );
-              },
-              icon: Icon(Icons.print))
-        ],
+            onPressed: _isGenerating ? null : _shareReturnViaWhatsApp,
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Share return via WhatsApp',
+          ),
+          IconButton(
+            onPressed: _sendSms,
+            icon: const Icon(Icons.sms),
+            tooltip: 'Send return via SMS',
+          ),        ],
         automaticallyImplyLeading: false,
         centerTitle: true,
         elevation: 5.0,
@@ -191,6 +347,25 @@ class returndetails extends StatelessWidget {
                   ),
                 ],
               ),
+              SizedBox(
+                height: 20.0,
+              ),           Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Customer phone number',
+                    prefixIcon: Icon(Icons.phone),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              if (_isGenerating)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: LinearProgressIndicator(),
+                ),
               SizedBox(
                 height: 20.0,
               ),
@@ -408,7 +583,9 @@ class returndetails extends StatelessWidget {
               Center(
                 child: ReasonInputWidget(
                   onReasonSubmitted: (reason) {
-                    Reason = reason;
+                    setState(() {
+                      Reason = reason;
+                    });
                   },
                 ),
               ),
@@ -426,7 +603,7 @@ class returndetails extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          ProductDetailCard('Name', product!.name),
+                          ProductDetailCard('Name', widget.product!.name),
                           SizedBox(
                             width: 5,
                           ),
@@ -435,7 +612,7 @@ class returndetails extends StatelessWidget {
                             width: 5,
                           ),
                           ProductDetailCard(
-                              'Total Weight', '${product!.weight} kg'),
+                              'Total Weight', '${widget.product!.weight} kg'),
                           SizedBox(
                             width: 10,
                           ),
@@ -469,13 +646,14 @@ class returndetails extends StatelessWidget {
                           SizedBox(
                             width: 5,
                           ),
-                          Obx(() => ProductDetailCard('used',
-                              '${productController.usedWeight} kg')),
+                          Obx(() => ProductDetailCard(
+                              'used',
+                              '${productController.usedWeight.value.toStringAsFixed(2)} kg')),
                           SizedBox(
                             width: 5,
                           ),
                           Obx(() => ProductDetailCard(
-                              'Refund', '${productController.costOfUsed} Rs')),
+                              'Refund', '${productController.costOfUsed.value.toStringAsFixed(2)} Rs')),
                         ],
                       ),
                     ),
