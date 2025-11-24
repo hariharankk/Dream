@@ -40,6 +40,7 @@ class UserBloc {
       _user = await repository.signinUser(email, password);
       _userGetter.sink.add(_user);
     } catch (e) {
+      print(e);
       throw e;
     }
   }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Internal app files (e.g. getApplicationDocumentsDirectory) -->
+    <files-path
+        name="internal_files"
+        path="." />
+
+    <!-- Cache, if you ever save there -->
+    <cache-path
+        name="cache_files"
+        path="." />
+
+    <!-- External app-specific storage, if you ever use getExternalStorageDirectory -->
+    <external-files-path
+        name="external_files"
+        path="." />
+
+</paths>

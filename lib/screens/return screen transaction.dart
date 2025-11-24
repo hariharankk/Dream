@@ -8,7 +8,53 @@ class InvoiceScreen extends StatelessWidget {
   Transaction transaction;
   InvoiceScreen({required this.transaction});
 
+  Widget _buildCustomerDetailsCard() {
+    Widget buildRow(String label, String value) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            Expanded(child: Text(value.isEmpty ? '-' : value)),
+          ],
+        ),
+      );
+    }
 
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Card(
+        elevation: 2.0,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Customer details',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8.0),
+              if (transaction.customerName != null &&
+                  transaction.customerName!.isNotEmpty)
+                buildRow('Name', transaction.customerName!),
+              buildRow('Phone', transaction.customerPhone ?? 'Not provided'),
+              if (transaction.customerAddress != null &&
+                  transaction.customerAddress!.isNotEmpty)
+                buildRow('Address', transaction.customerAddress!),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     cartController.setCartItems(transaction.products as List<dynamic>);
@@ -26,6 +72,7 @@ class InvoiceScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildCustomerDetailsCard(),
             Padding(
               padding: const EdgeInsets.only(top: 16.0),
               child: Text(

@@ -8,6 +8,9 @@ import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:whatsapp_share_improved/whatsapp_share_improved.dart';
+
+
 
 class InvoiceScreen extends StatefulWidget {
   final Transaction transaction;
@@ -20,7 +23,6 @@ class InvoiceScreen extends StatefulWidget {
 
 class _InvoiceScreenState extends State<InvoiceScreen> {
   final TransactionController cartController = Get.put(TransactionController());
-  final TextEditingController _phoneController = TextEditingController();
   final PdfInvoiceService _pdfInvoiceService = PdfInvoiceService();
 
   bool _isGenerating = false;
@@ -34,7 +36,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
   @override
   void dispose() {
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -98,6 +99,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         sgst: cartController.SGSTValue.value,
         cgst: cartController.CGSTValue.value,
         total: cartController.totalValue.value,
+
+        // ------- COMPANY DETAILS (edit these once) -------
+        companyName: 'JKT Hitech Rice Industries',
+        companyAddress:
+        'Your full address line 1,\nYour area, city, district, PIN',
+        companyGst: '33AAUFJ0516G1ZH',
+        companyFssai: 'Your FSSAI No here',
+
+        // ------- CUSTOMER DETAILS FROM TRANSACTION -------
+        customerName: widget.transaction.customerName,
+        customerAddress: widget.transaction.customerAddress,
+        customerPhone: widget.transaction.customerPhone,
       );
 
       return file;
@@ -137,9 +150,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
       // Format quantity: no decimals if whole number, else 2 decimals
       final bool isWhole = quantity.truncateToDouble() == quantity;
-      final String qtyStr =
-      quantity.toStringAsFixed(isWhole ? 0 : 2);
-
+      final String qtyStr = quantity.toStringAsFixed(isWhole ? 0 : 2);
       buffer.writeln(
           '${item['name']} x$qtyStr - Rs ${price.toStringAsFixed(2)}');
     }
@@ -163,46 +174,111 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     }
     return full.substring(0, maxChars);
   }
+  Widget _buildCustomerDetailsCard() {
+    final String phone = widget.transaction.customerPhone ?? 'Not provided';
+    final String? name = widget.transaction.customerName;
+    final String? address = widget.transaction.customerAddress;
+
+    Widget _buildRow(String label, String value) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            Expanded(child: Text(value.isEmpty ? '-' : value)),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Card(
+        elevation: 2.0,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Customer details',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8.0),
+              if (name != null && name.isNotEmpty) _buildRow('Name', name),
+              _buildRow('Phone', phone),
+              if (address != null && address.isNotEmpty)
+                _buildRow('Address', address),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   // --- Actions ---------------------------------------------------------------
 
   /// Share the generated PDF using the system share sheet (WhatsApp, Gmail, etc.).
   /// No longer forces a separate WhatsApp deeplink after sharing.
+  /// Share the generated PDF directly to the customer's WhatsApp chat.
   Future<void> _sharePdf() async {
+    final String? rawPhone = widget.transaction.customerPhone;
+
+    if (rawPhone == null || rawPhone.trim().isEmpty) {
+      Get.snackbar(
+        'WhatsApp',
+        'Customer phone number is missing for this transaction.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // Clean number: keep only digits
+    String phone = rawPhone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // If it’s a 10-digit Indian mobile number, prefix 91
+    if (phone.length == 10) {
+      phone = '91$phone';
+    }
+
     final File? pdfFile = await _generateInvoicePdf();
     if (pdfFile == null) return;
 
     final String message = _buildSummaryMessage();
 
     try {
-      await Share.shareXFiles(
-        <XFile>[
-          XFile(
-            pdfFile.path,
-            mimeType: 'application/pdf',
-          ),
-        ],
-        text: message,
-        subject: 'Invoice',
+      await WhatsappShareImproved.shareFile(
+        phone: phone,
+        text: message,          // optional caption
+        filePath: [pdfFile.path],
       );
     } catch (error) {
+      print(error);
       Get.snackbar(
-        'Share',
-        error.toString(),
+        'WhatsApp',
+        'Unable to send invoice via WhatsApp.\n$error',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
     }
   }
-
   /// Send SMS with only the text summary.
   Future<void> _sendSms() async {
-    final String phone = _phoneController.text.trim();
-    if (phone.isEmpty) {
+    final String? phone = widget.transaction.customerPhone;
+    if (phone == null || phone.trim().isEmpty) {
       Get.snackbar(
         'SMS',
-        'Enter the customer\'s phone number to continue.',
+        'Customer phone number is missing for this transaction.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
@@ -268,18 +344,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Phone input (used for SMS only)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Customer phone number (for SMS)',
-                  prefixIcon: Icon(Icons.phone),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
+            _buildCustomerDetailsCard(),
             if (_isGenerating)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),

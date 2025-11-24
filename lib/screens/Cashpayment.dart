@@ -14,6 +14,17 @@ class CashPaymentPage extends StatelessWidget {
   Future<void> _onConfirmPressed() async {
     isProcessing.value = true;
 
+    if (cartController.customerPhone.value.isEmpty) {
+      Get.snackbar(
+        'Customer details',
+        'Customer phone number is required.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      isProcessing.value = false;
+      return;
+    }
+
+
     Position position = await _fetchCurrentLocation();
     List<Map<String, dynamic>> products = _getCartItems();
 
@@ -22,6 +33,9 @@ class CashPaymentPage extends StatelessWidget {
       lat: '${position.latitude}',
       longi: '${position.longitude}',
       products: products,
+      customerName: cartController.customerName.value,
+      customerAddress: cartController.customerAddress.value,
+      customerPhone: cartController.customerPhone.value,
     );
 
     var trans = transaction.toMap();

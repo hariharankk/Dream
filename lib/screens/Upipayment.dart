@@ -18,12 +18,25 @@ class UpiPaymentPage extends StatelessWidget {
     Position position = await _fetchCurrentLocation();
     List<Map<String, dynamic>> products = _getCartItems();
 
+    if (cartController.customerPhone.value.isEmpty) {
+      Get.snackbar(
+        'Customer details',
+        'Customer phone number is required.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      isProcessing.value = false;
+      return;
+    }
+
 
     Transaction transaction = Transaction(
       payment_method: 'upi',
       lat: '${position.latitude}',
       longi: '${position.longitude}',
       products: products,
+      customerName: cartController.customerName.value,
+      customerAddress: cartController.customerAddress.value,
+      customerPhone: cartController.customerPhone.value,
     );
 
     var trans = transaction.toMap();
