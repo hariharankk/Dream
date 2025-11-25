@@ -59,16 +59,34 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     return 0.0;
   }
 
+  double _lineBaseAmount(Map<String, dynamic> item) {
+    return _parseDouble(item['price']) * _parseDouble(item['quantity']);
+  }
+
+  double _lineTaxPortion(double baseAmount) {
+    return double.parse((baseAmount * 0.025).toStringAsFixed(2));
+  }
+
+  double _lineTotalWithTax(Map<String, dynamic> item) {
+    final double baseAmount = _lineBaseAmount(item);
+    final double sgst = _lineTaxPortion(baseAmount);
+    final double cgst = _lineTaxPortion(baseAmount);
+    return baseAmount + sgst + cgst;
+  }
+
   /// Build normalized items list from the *current cartController.cartItems*.
   /// This ensures PDF, SMS, and UI all use the same data.
   List<Map<String, dynamic>> _buildInvoiceItems() {
     return cartController.cartItems
         .map<Map<String, dynamic>>((dynamic item) {
       if (item is Map) {
+        final double rateWithTax = cartController.priceWithTax(item);
         return {
           'name': item['name'] ?? '',
-          'price': _parseDouble(item['price']),
+          'price': rateWithTax,
           'quantity': _parseDouble(item['quantity']),
+          'sgst': _parseDouble(item['sgst']),
+          'cgst': _parseDouble(item['cgst']),
         };
       }
       return {
@@ -145,14 +163,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     buffer.writeln('Date: ${formatter.format(timestamp)}');
 
     for (final Map<String, dynamic> item in _buildInvoiceItems()) {
-      final double price = _parseDouble(item['price']);
+
       final double quantity = _parseDouble(item['quantity']);
+      final double baseAmount = _lineBaseAmount(item);
+      final double sgstAmount = _lineTaxPortion(baseAmount);
+      final double cgstAmount = _lineTaxPortion(baseAmount);
+      final double totalWithTax = _lineTotalWithTax(item);
 
       // Format quantity: no decimals if whole number, else 2 decimals
       final bool isWhole = quantity.truncateToDouble() == quantity;
       final String qtyStr = quantity.toStringAsFixed(isWhole ? 0 : 2);
       buffer.writeln(
-          '${item['name']} x$qtyStr - Rs ${price.toStringAsFixed(2)}');
+          '${item['name']} x$qtyStr | Base: Rs ${baseAmount.toStringAsFixed(2)}, SGST: Rs ${sgstAmount.toStringAsFixed(2)}, CGST: Rs ${cgstAmount.toStringAsFixed(2)}, Total: Rs ${totalWithTax.toStringAsFixed(2)}');
     }
 
     buffer.writeln(
@@ -390,69 +412,103 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                   ),
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.vertical,
-                                    child: IntrinsicWidth(
-                                      child: Table(
-                                        columnWidths: const {
-                                          0: FlexColumnWidth(6), // Name
-                                          1: FlexColumnWidth(5), // Price
-                                          2: FlexColumnWidth(5), // Quantity
-                                          3: FlexColumnWidth(5), // Total
-                                        },
-                                        border: TableBorder.all(),
-                                        children: [
-                                          const TableRow(
-                                            children: [
-                                              Padding(
-                                                padding: EdgeInsets.all(8.0),
-                                                child: Text(
-                                                  'Name',
-                                                  style: TextStyle(
-                                                    fontSize: 10.0,
-                                                    fontWeight: FontWeight.bold,
+    child: IntrinsicWidth(
+    child: Table(
+    columnWidths: const {
+    0: FlexColumnWidth(6), // Name
+    1: FlexColumnWidth(3), // Quantity
+    2: FlexColumnWidth(4), // Base Amount
+    3: FlexColumnWidth(4), // SGST
+    4: FlexColumnWidth(4), // CGST
+    5: FlexColumnWidth(5), // Total (with tax)
+    },
+    border: TableBorder.all(),
+    children: [
+    const TableRow(
+    children: [
+    Padding(
+    padding: EdgeInsets.all(8.0),
+    child: Text(
+    'Name',
+    style: TextStyle(
+    fontSize: 10.0,
+    fontWeight: FontWeight.bold,
+    ),                                                  ),
+                                                ),
+    Padding(
+    padding: EdgeInsets.all(8.0),
+    child: Text(
+    'Qty',
+    style: TextStyle(
+    fontSize: 10.0,
+    fontWeight: FontWeight.bold,
+    ),
                                                   ),
                                                 ),
-                                              ),
-                                              Padding(
-                                                padding: EdgeInsets.all(8.0),
-                                                child: Text(
-                                                  'Price',
-                                                  style: TextStyle(
-                                                    fontSize: 10.0,
-                                                    fontWeight: FontWeight.bold,
+    Padding(
+    padding: EdgeInsets.all(8.0),
+    child: Text(
+    'Base (Rs)',
+    style: TextStyle(
+    fontSize: 10.0,
+    fontWeight: FontWeight.bold,
+    ),
                                                   ),
                                                 ),
-                                              ),
-                                              Padding(
-                                                padding: EdgeInsets.all(8.0),
-                                                child: Text(
-                                                  'Quantity',
-                                                  style: TextStyle(
-                                                    fontSize: 10.0,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: EdgeInsets.all(8.0),
-                                                child: Text(
-                                                  'Total',
-                                                  style: TextStyle(
-                                                    fontSize: 10.0,
-                                                    fontWeight: FontWeight.bold,
+      Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Text(
+          'SGST (Rs)',
+          style: TextStyle(
+            fontSize: 10.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Text(
+          'CGST (Rs)',
+          style: TextStyle(
+            fontSize: 10.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Text(
+          'Total (Rs)',
+          style: TextStyle(
+            fontSize: 10.0,
+            fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          for (final item
-                                          in cartController.cartItems)
-                                            TableRow(
+                                              ...cartController.cartItems
+        .map<TableRow>((dynamic item) {
+    final Map<String, dynamic>
+    lineItem =
+    Map<String, dynamic>.from(
+    item as Map);
+    final double quantity =
+    _parseDouble(lineItem['quantity']);
+    final double baseAmount =
+    _lineBaseAmount(lineItem);
+    final double taxAmount =
+    _lineTaxPortion(baseAmount);
+    final double totalAmount =
+    _lineTotalWithTax(lineItem);
+
+    return TableRow(
                                               children: [
                                                 Padding(
                                                   padding:
                                                   const EdgeInsets.all(8.0),
                                                   child: Text(
-                                                    '${item['name']}',
+    '${lineItem['name']}',
                                                     maxLines: 3,
                                                     overflow:
                                                     TextOverflow.ellipsis,
@@ -464,9 +520,44 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                                 ),
                                                 Padding(
                                                   padding:
+    const EdgeInsets.all(8.0),
+    child: Text(
+    quantity
+        .toStringAsFixed(2),
+    style: const TextStyle(
+    fontSize: 10.0,
+    ),
+    ),
+    ),
+    Padding(
+    padding:
+    const EdgeInsets.all(8.0),
+    child: Text(
+    baseAmount
+        .toStringAsFixed(2),
+    style: const TextStyle(
+    fontSize: 10.0,
+    ),
+    ),
+    ),
+    Padding(
+    padding:
+    const EdgeInsets.all(8.0),
+
+
+    child: Text(
+
+    taxAmount
+        .toStringAsFixed(2),
+    style: const TextStyle(
+    fontSize: 10.0,
+    ),
+    ),                                                ),
+                                                Padding(
+                                                  padding:
                                                   const EdgeInsets.all(8.0),
                                                   child: Text(
-                                                    _parseDouble(item['price'])
+    taxAmount
                                                         .toStringAsFixed(2),
                                                     style: const TextStyle(
                                                       fontSize: 10.0,
@@ -477,23 +568,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                                   padding:
                                                   const EdgeInsets.all(8.0),
                                                   child: Text(
-                                                    _parseDouble(
-                                                        item['quantity'])
-                                                        .toStringAsFixed(2),
-                                                    style: const TextStyle(
-                                                      fontSize: 10.0,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Padding(
-                                                  padding:
-                                                  const EdgeInsets.all(8.0),
-                                                  child: Text(
-                                                    (_parseDouble(
-                                                        item['price']) *
-                                                        _parseDouble(
-                                                            item[
-                                                            'quantity']))
+                                                  totalAmount
                                                         .toStringAsFixed(2),
                                                     style: const TextStyle(
                                                       fontSize: 10.0,
@@ -501,7 +576,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                                   ),
                                                 ),
                                               ],
-                                            ),
+    );
+                                              }).toList(),
                                         ],
                                       ),
                                     ),
@@ -534,7 +610,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   const SizedBox(height: 8),
                   Obx(
                         () => Text(
-                      'SGST of 2.5%: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
+                  'SGST: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 20.0,
                         fontWeight: FontWeight.w600,
@@ -544,7 +620,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   const SizedBox(height: 8),
                   Obx(
                         () => Text(
-                      'CGST of 2.5%: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
+    'CGST: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 20.0,
                         fontWeight: FontWeight.w600,

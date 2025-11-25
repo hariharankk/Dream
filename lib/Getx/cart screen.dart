@@ -47,21 +47,56 @@ class CartController extends GetxController {
   }
 
   void updateValues() {
-    // Calculate Subtotal
-    subtotalValue.value = double.parse(
-        cartItems
-            .fold(0.0,
-                (sum, item) => sum + item.price * (item.quantity ?? 1))
-            .toStringAsFixed(0));
+    double subtotal = 0;
+    double sgstTotal = 0;
+    double cgstTotal = 0;
 
-// Calculate GST (Combined CGST and SGST as they are usually equal)
+    for (final Product item in cartItems) {
+      final double quantity = (item.quantity ?? 1).toDouble();
+      final double basePrice = _basePrice(item);
+      final double sgstAmount = _sgstAmount(item, basePrice);
+      final double cgstAmount = _cgstAmount(item, basePrice);
 
-// Calculate Discount
-    SGSTValue.value = double.parse((subtotalValue.value * 0.025).toStringAsFixed(2));
-    CGSTValue.value = double.parse((subtotalValue.value * 0.025).toStringAsFixed(2));
-// Calculate Total
-    totalValue.value = double.parse((subtotalValue.value + CGSTValue.value + SGSTValue.value).toStringAsFixed(0));
+      subtotal += basePrice * quantity;
+      sgstTotal += sgstAmount * quantity;
+      cgstTotal += cgstAmount * quantity;
+    }
+
+    subtotalValue.value = double.parse(subtotal.toStringAsFixed(2));
+    SGSTValue.value = double.parse(sgstTotal.toStringAsFixed(2));
+    CGSTValue.value = double.parse(cgstTotal.toStringAsFixed(2));
+    totalValue.value = double.parse(
+        (subtotalValue.value + CGSTValue.value + SGSTValue.value)
+            .toStringAsFixed(2));
   }
+
+  double _totalGstPercent(Product item) => (item.sgst + item.cgst);
+
+  double _basePrice(Product item) {
+    final double gstPercent = _totalGstPercent(item);
+    if (gstPercent > 0) {
+      return item.gstPrice / (1 + (gstPercent / 100));
+    }
+    return item.price;
+  }
+  double _sgstAmount(Product item, double basePrice) =>
+      basePrice * (item.sgst / 100);
+
+  double _cgstAmount(Product item, double basePrice) =>
+      basePrice * (item.cgst / 100);
+
+  double priceWithTax(Product item) {
+    final double basePrice = _basePrice(item);
+    return basePrice +
+        _sgstAmount(item, basePrice) +
+        _cgstAmount(item, basePrice);
+  }
+
+  double sgstAmountFor(Product item) => _sgstAmount(item, _basePrice(item));
+
+  double cgstAmountFor(Product item) => _cgstAmount(item, _basePrice(item));
+
+  double basePrice(Product item) => _basePrice(item);
   void setCustomerDetails({String? name, required String phone, String? address}) {
     customerName.value = name?.trim() ?? '';
     customerPhone.value = phone.trim();

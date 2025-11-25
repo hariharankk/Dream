@@ -151,6 +151,21 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
+  double _lineBaseAmount(Product item) {
+    return (item.price) * (item.quantity ?? 1);
+  }
+
+  double _lineTaxPortion(double baseAmount) {
+    return double.parse((baseAmount * 0.025).toStringAsFixed(2));
+  }
+
+  double _lineTotalWithTax(Product item) {
+    final double baseAmount = _lineBaseAmount(item);
+    final double sgst = _lineTaxPortion(baseAmount);
+    final double cgst = _lineTaxPortion(baseAmount);
+    return baseAmount + sgst + cgst;
+  }
+
   List<TableRow> _buildTableRows() {
     final List<TableRow> rows = [];
 
@@ -159,9 +174,12 @@ class _CartScreenState extends State<CartScreen> {
       TableRow(
         children: [
           _buildHeaderCell('Name'),
-          _buildHeaderCell('Price'),
+          _buildHeaderCell('Base Rate'),
           _buildHeaderCell('Quantity'),
-          _buildHeaderCell('Total'),
+          _buildHeaderCell('Base Amount'),
+          _buildHeaderCell('SGST (2.5%)'),
+          _buildHeaderCell('CGST (2.5%)'),
+          _buildHeaderCell('Tax + Base'),
           _buildHeaderCell('Reduce'),
           _buildHeaderCell('Delete'),
         ],
@@ -170,6 +188,10 @@ class _CartScreenState extends State<CartScreen> {
 
     // Data rows
     for (Product item in cartController.cartItems) {
+      final double baseAmount = _lineBaseAmount(item);
+      final double sgstAmount = _lineTaxPortion(baseAmount);
+      final double cgstAmount = _lineTaxPortion(baseAmount);
+      final double totalWithTax = _lineTotalWithTax(item);
       rows.add(
         TableRow(
           children: [
@@ -177,11 +199,12 @@ class _CartScreenState extends State<CartScreen> {
               item.name ?? '',
               maxLines: 3,
             ),
-            _buildBodyCell('${item.price}'),
-            _buildBodyCell('${item.quantity}'),
-            _buildBodyCell(
-              '${(item.price * (item.quantity ?? 1)).toStringAsFixed(0)}',
-            ),
+            _buildBodyCell(item.price.toStringAsFixed(2)),
+            _buildBodyCell('${item.quantity ?? 0}'),
+            _buildBodyCell(baseAmount.toStringAsFixed(2)),
+            _buildBodyCell(sgstAmount.toStringAsFixed(2)),
+            _buildBodyCell(cgstAmount.toStringAsFixed(2)),
+            _buildBodyCell(totalWithTax.toStringAsFixed(2)),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: TextButton(
@@ -268,10 +291,13 @@ class _CartScreenState extends State<CartScreen> {
                           columnWidths: const {
                             0: FlexColumnWidth(6),
                             1: FlexColumnWidth(5),
-                            2: FlexColumnWidth(5),
-                            3: FlexColumnWidth(5),
-                            4: FlexColumnWidth(5),
-                            5: FlexColumnWidth(5),
+                            2: FlexColumnWidth(4),
+                            3: FlexColumnWidth(4),
+                            4: FlexColumnWidth(4),
+                            5: FlexColumnWidth(4),
+                            6: FlexColumnWidth(5),
+                            7: FlexColumnWidth(4),
+                            8: FlexColumnWidth(4),
                           },
                           border: TableBorder.all(),
                           children: _buildTableRows(),
@@ -303,7 +329,7 @@ class _CartScreenState extends State<CartScreen> {
           )),
           const SizedBox(height: 8),
           Obx(() => Text(
-            'SGST of 2.5%: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
+            'SGST: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
             style: const TextStyle(
               fontSize: 20.0,
               fontWeight: FontWeight.w600,
@@ -311,7 +337,7 @@ class _CartScreenState extends State<CartScreen> {
           )),
           const SizedBox(height: 8),
           Obx(() => Text(
-            'CGST of 2.5%: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
+            'CGST: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
             style: const TextStyle(
               fontSize: 20.0,
               fontWeight: FontWeight.w600,

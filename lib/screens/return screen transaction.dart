@@ -6,7 +6,15 @@ import 'package:inventory/Model/Transaction.dart';
 class InvoiceScreen extends StatelessWidget {
   final TransactionController cartController = Get.put(TransactionController());
   Transaction transaction;
+
   InvoiceScreen({required this.transaction});
+
+  double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
   Widget _buildCustomerDetailsCard() {
     Widget buildRow(String label, String value) {
@@ -36,10 +44,7 @@ class InvoiceScreen extends StatelessWidget {
             children: [
               const Text(
                 'Customer details',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8.0),
               if (transaction.customerName != null &&
@@ -55,6 +60,7 @@ class InvoiceScreen extends StatelessWidget {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     cartController.setCartItems(transaction.products as List<dynamic>);
@@ -78,10 +84,7 @@ class InvoiceScreen extends StatelessWidget {
               child: Text(
                 'Cart',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 35.0,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 35.0, fontWeight: FontWeight.w700),
               ),
             ),
             Expanded(
@@ -101,119 +104,223 @@ class InvoiceScreen extends StatelessWidget {
                       height: 100,
                       child: Column(
                         children: [
-                          Obx(() => Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minWidth: MediaQuery.of(context).size.width,
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.vertical,
-                                  child: IntrinsicWidth(
-                                    child: Table(
-                                      columnWidths: {
-                                        0: FlexColumnWidth(6), // Increased width for Name
-                                        1: FlexColumnWidth(5), // Increased width for Price
-                                        2: FlexColumnWidth(5), // Increased width for Discount
-                                        3: FlexColumnWidth(5), // Increased width for Discount Price
-                                      },
-                                      border: TableBorder.all(),
-                                      children: [
-                                        TableRow(
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Name',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
+                          Obx(
+                            () => Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minWidth: MediaQuery.of(context).size.width,
+                                  ),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.vertical,
+                                    child: IntrinsicWidth(
+                                      child: Table(
+                                        columnWidths: {
+                                          0: FlexColumnWidth(6),
+                                          // Increased width for Name
+                                          1: FlexColumnWidth(3),
+                                          // Quantity
+                                          2: FlexColumnWidth(4),
+                                          // Base Amount
+                                          3: FlexColumnWidth(4),
+                                          // SGST
+                                          4: FlexColumnWidth(4),
+                                          // CGST
+                                          5: FlexColumnWidth(5),
+                                          // Total (with tax)
+                                        },
+                                        border: TableBorder.all(),
+                                        children: [
+                                          TableRow(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  8.0,
+                                                ),
+                                                child: Text(
+                                                  'Name',
+                                                  style: TextStyle(
+                                                    fontSize: 10.0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Price',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  8.0,
+                                                ),
+                                                child: Text(
+                                                  'Qty',
+                                                  style: TextStyle(
+                                                    fontSize: 10.0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Quantity',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  8.0,
+                                                ),
+                                                child: Text(
+                                                  'Base rate',
+                                                  style: TextStyle(
+                                                    fontSize: 10.0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                'Total',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
-                                                  fontWeight: FontWeight.bold,
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  8.0,
+                                                ),
+                                                child: Text(
+                                                  'SGST',
+                                                  style: TextStyle(
+                                                    fontSize: 10.0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                        for (var item in cartController.cartItems) TableRow(
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                '${item['name']}',
-                                                maxLines: 3,
-                                                overflow: TextOverflow.ellipsis,
-                                                softWrap: true,
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  8.0,
+                                                ),
+                                                child: Text(
+                                                  'CGST',
+                                                  style: TextStyle(
+                                                    fontSize: 10.0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                '${item['price']}',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  8.0,
+                                                ),
+                                                child: Text(
+                                                  'Total',
+                                                  style: TextStyle(
+                                                    fontSize: 10.0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                '${item['quantity']}',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
+                                            ],
+                                          ),
+                                          ...cartController.cartItems.map<
+                                            TableRow
+                                          >((dynamic item) {
+                                            final double price = _toDouble(
+                                              item['price'],
+                                            );
+                                            final double quantity = _toDouble(
+                                              item['quantity'],
+                                            );
+                                            final double baseAmount =
+                                                double.parse(
+                                                  (price * quantity)
+                                                      .toStringAsFixed(2),
+                                                );
+                                            final double taxAmount =
+                                                double.parse(
+                                                  (baseAmount * 0.025)
+                                                      .toStringAsFixed(2),
+                                                );
+                                            final double totalAmount =
+                                                baseAmount + (taxAmount * 2);
+
+                                            return TableRow(
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    8.0,
+                                                  ),
+                                                  child: Text(
+                                                    '${item['name']}',
+                                                    maxLines: 3,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    softWrap: true,
+                                                    style: TextStyle(
+                                                      fontSize: 10.0,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                '${((item['price']) * item['quantity']).toStringAsFixed(0)}',
-                                                style: TextStyle(
-                                                  fontSize: 10.0,
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    8.0,
+                                                  ),
+                                                  child: Text(
+                                                    quantity.toStringAsFixed(2),
+                                                    style: TextStyle(
+                                                      fontSize: 10.0,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    8.0,
+                                                  ),
+                                                  child: Text(
+                                                    baseAmount.toStringAsFixed(
+                                                      2,
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 10.0,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    8.0,
+                                                  ),
+                                                  child: Text(
+                                                    taxAmount.toStringAsFixed(
+                                                      2,
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 10.0,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    8.0,
+                                                  ),
+                                                  child: Text(
+                                                    taxAmount.toStringAsFixed(
+                                                      2,
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 10.0,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    8.0,
+                                                  ),
+                                                  child: Text(
+                                                    totalAmount.toStringAsFixed(
+                                                      2,
+                                                    ),
+                                                    style: TextStyle(
+                                                      fontSize: 10.0,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          }).toList(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),)
+                          ),
                         ],
                       ),
                     ),
@@ -227,37 +334,45 @@ class InvoiceScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Obx(() => Text(
-                    'Subtotal: Rs.${cartController.subtotalValue}',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )),
-                  SizedBox(height: 8),
-                  Text(
-                    'SGST of 2.5%: Rs.${cartController.CGSTValue}',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w600,
+                  Obx(
+                    () => Text(
+                      'Subtotal: Rs.${cartController.subtotalValue.value.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   SizedBox(height: 8),
-                  Text(
-                    'CGST of 2.5%: Rs.${cartController.CGSTValue}',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w600,
+                  Obx(
+                    () => Text(
+                      'SGST: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Obx(
+                    () => Text(
+                      'CGST: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   SizedBox(height: 16),
-                  Obx(() => Text(
-                    'Total: Rs.${cartController.totalValue}',
-                    style: TextStyle(
-                      fontSize: 35.0,
-                      fontWeight: FontWeight.w700,
+                  Obx(
+                    () => Text(
+                      'Total: Rs.${cartController.totalValue.value.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 35.0,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  )),
+                  ),
                 ],
               ),
             ),

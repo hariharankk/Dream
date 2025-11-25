@@ -140,8 +140,10 @@ class PdfInvoiceService {
             columnWidths: <int, pw.TableColumnWidth>{
               0: const pw.FlexColumnWidth(4),   // Item
               1: const pw.FlexColumnWidth(1.5), // Qty
-              2: const pw.FlexColumnWidth(2),   // Rate
-              3: const pw.FlexColumnWidth(2.5), // Amount
+              2: const pw.FlexColumnWidth(2), // Base (Rs)
+              3: const pw.FlexColumnWidth(2), // SGST (Rs)
+              4: const pw.FlexColumnWidth(2), // CGST (Rs)
+              5: const pw.FlexColumnWidth(2.3), // To
             },
             children: [
               // Header row
@@ -149,22 +151,31 @@ class PdfInvoiceService {
                 children: [
                   _tableHeaderCell('Item'),
                   _tableHeaderCell('Qty'),
-                  _tableHeaderCell('Rate (Rs)'),
-                  _tableHeaderCell('Amount (Rs)'),
-                ],
+                  _tableHeaderCell('Base (Rs)'),
+                  _tableHeaderCell('SGST (Rs)'),
+                  _tableHeaderCell('CGST (Rs)'),
+                  _tableHeaderCell('Total (Rs)'),                ],
               ),
               // Data rows
               ...items.map((Map<String, dynamic> item) {
                 final double price = _toDouble(item['price']);
                 final double quantity = _toDouble(item['quantity']);
-                final double amount = price * quantity;
+                final double baseAmount = price * quantity;
+                final double sgstAmount = double.parse(
+                    (baseAmount * 0.025).toStringAsFixed(2));
+                final double cgstAmount = double.parse(
+                    (baseAmount * 0.025).toStringAsFixed(2));
+                final double totalAmount = baseAmount + sgstAmount + cgstAmount;
+
 
                 return pw.TableRow(
                   children: [
                     _tableCell(item['name']?.toString() ?? ''),
                     _tableCell(_formatQty(quantity)),
-                    _tableCell(price.toStringAsFixed(2)),
-                    _tableCell(amount.toStringAsFixed(2)),
+                    _tableCell(baseAmount.toStringAsFixed(2)),
+                    _tableCell(sgstAmount.toStringAsFixed(2)),
+                    _tableCell(cgstAmount.toStringAsFixed(2)),
+                    _tableCell(totalAmount.toStringAsFixed(2)),
                   ],
                 );
               }).toList(),
