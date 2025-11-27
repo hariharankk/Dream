@@ -6,11 +6,8 @@ import 'package:inventory/Model/Transaction.dart';
 import 'package:inventory/Service/pdf_invoice_service.dart';
 import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:whatsapp_share_improved/whatsapp_share_improved.dart';
-
-
 
 class InvoiceScreen extends StatefulWidget {
   final Transaction transaction;
@@ -59,26 +56,39 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     return 0.0;
   }
 
-  double _lineBaseAmount(Map<String, dynamic> item) {
-    return _parseDouble(item['price']) * _parseDouble(item['quantity']);
+  double _lineBaseRate(Map<String, dynamic> item) {
+    final double priceWithTax = _parseDouble(item['price']);
+    final double totalTaxPercent =
+        _parseDouble(item['sgst']) + _parseDouble(item['cgst']);
+
+    if (totalTaxPercent > 0) {
+      return priceWithTax / (1 + (totalTaxPercent / 100));
+    }
+    return priceWithTax;
   }
 
-  double _lineTaxPortion(double baseAmount) {
-    return double.parse((baseAmount * 0.025).toStringAsFixed(2));
+  double _lineBaseAmount(Map<String, dynamic> item) {
+    final double baseRate = _lineBaseRate(item);
+    final double quantity = _parseDouble(item['quantity']);
+    return double.parse((baseRate * quantity).toStringAsFixed(2));
+  }
+
+  double _lineTaxPortion(Map<String, dynamic> item, double percent) {
+    final double baseAmount = _lineBaseAmount(item);
+    return double.parse((baseAmount * (percent / 100)).toStringAsFixed(2));
   }
 
   double _lineTotalWithTax(Map<String, dynamic> item) {
     final double baseAmount = _lineBaseAmount(item);
-    final double sgst = _lineTaxPortion(baseAmount);
-    final double cgst = _lineTaxPortion(baseAmount);
-    return baseAmount + sgst + cgst;
+    final double sgst = _lineTaxPortion(item, _parseDouble(item['sgst']));
+    final double cgst = _lineTaxPortion(item, _parseDouble(item['cgst']));
+    return double.parse((baseAmount + sgst + cgst).toStringAsFixed(2));
   }
 
   /// Build normalized items list from the *current cartController.cartItems*.
   /// This ensures PDF, SMS, and UI all use the same data.
   List<Map<String, dynamic>> _buildInvoiceItems() {
-    return cartController.cartItems
-        .map<Map<String, dynamic>>((dynamic item) {
+    return cartController.cartItems.map<Map<String, dynamic>>((dynamic item) {
       if (item is Map) {
         final double rateWithTax = cartController.priceWithTax(item);
         return {
@@ -89,19 +99,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           'cgst': _parseDouble(item['cgst']),
         };
       }
-      return {
-        'name': item.toString(),
-        'price': 0.0,
-        'quantity': 0.0,
-      };
+      return {'name': item.toString(), 'price': 0.0, 'quantity': 0.0};
     }).toList();
   }
 
   /// Generate the PDF file using the current cart state.
   Future<File?> _generateInvoicePdf() async {
     final List<Map<String, dynamic>> items = _buildInvoiceItems();
-    final DateTime? createdAt =
-    _parseTransactionDate(widget.transaction.transaction_time);
+    final DateTime? createdAt = _parseTransactionDate(
+      widget.transaction.transaction_time,
+    );
 
     try {
       setState(() {
@@ -121,7 +128,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         // ------- COMPANY DETAILS (edit these once) -------
         companyName: 'JKT Hitech Rice Industries',
         companyAddress:
-        'Your full address line 1,\nYour area, city, district, PIN',
+            'Your full address line 1,\nYour area, city, district, PIN',
         companyGst: '33AAUFJ0516G1ZH',
         companyFssai: 'Your FSSAI No here',
 
@@ -156,35 +163,46 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
     final DateTime timestamp =
         _parseTransactionDate(widget.transaction.transaction_time) ??
-            DateTime.now();
+        DateTime.now();
 
     final StringBuffer buffer = StringBuffer();
     buffer.writeln('Invoice #${widget.transaction.id ?? '-'}');
     buffer.writeln('Date: ${formatter.format(timestamp)}');
 
     for (final Map<String, dynamic> item in _buildInvoiceItems()) {
-
       final double quantity = _parseDouble(item['quantity']);
       final double baseAmount = _lineBaseAmount(item);
-      final double sgstAmount = _lineTaxPortion(baseAmount);
-      final double cgstAmount = _lineTaxPortion(baseAmount);
+      final double sgstAmount = _lineTaxPortion(
+        item,
+        _parseDouble(item['sgst']),
+      );
+      final double cgstAmount = _lineTaxPortion(
+        item,
+        _parseDouble(item['cgst']),
+      );
+      ;
       final double totalWithTax = _lineTotalWithTax(item);
 
       // Format quantity: no decimals if whole number, else 2 decimals
       final bool isWhole = quantity.truncateToDouble() == quantity;
       final String qtyStr = quantity.toStringAsFixed(isWhole ? 0 : 2);
       buffer.writeln(
-          '${item['name']} x$qtyStr | Base: Rs ${baseAmount.toStringAsFixed(2)}, SGST: Rs ${sgstAmount.toStringAsFixed(2)}, CGST: Rs ${cgstAmount.toStringAsFixed(2)}, Total: Rs ${totalWithTax.toStringAsFixed(2)}');
+        '${item['name']} x$qtyStr | Base: Rs ${baseAmount.toStringAsFixed(2)}, SGST: Rs ${sgstAmount.toStringAsFixed(2)}, CGST: Rs ${cgstAmount.toStringAsFixed(2)}, Total: Rs ${totalWithTax.toStringAsFixed(2)}',
+      );
     }
 
     buffer.writeln(
-        'Subtotal: Rs ${cartController.subtotalValue.value.toStringAsFixed(2)}');
+      'Subtotal: Rs ${cartController.subtotalValue.value.toStringAsFixed(2)}',
+    );
     buffer.writeln(
-        'SGST: Rs ${cartController.SGSTValue.value.toStringAsFixed(2)}');
+      'SGST: Rs ${cartController.SGSTValue.value.toStringAsFixed(2)}',
+    );
     buffer.writeln(
-        'CGST: Rs ${cartController.CGSTValue.value.toStringAsFixed(2)}');
+      'CGST: Rs ${cartController.CGSTValue.value.toStringAsFixed(2)}',
+    );
     buffer.writeln(
-        'Total: Rs ${cartController.totalValue.value.toStringAsFixed(2)}');
+      'Total: Rs ${cartController.totalValue.value.toStringAsFixed(2)}',
+    );
     buffer.writeln('Thank you for shopping with us!');
 
     // Limit message length by characters (not words) to avoid huge SMS blobs.
@@ -196,6 +214,127 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     }
     return full.substring(0, maxChars);
   }
+
+  Widget _buildHeaderCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 10.0, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildBodyCell(String text, {int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        text,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        softWrap: true,
+        style: const TextStyle(fontSize: 10.0),
+      ),
+    );
+  }
+
+  List<TableRow> _buildTableRows() {
+    final List<TableRow> rows = [];
+
+    rows.add(
+      TableRow(
+        children: [
+          _buildHeaderCell('Name'),
+          _buildHeaderCell('Qty'),
+          _buildHeaderCell('Base (Rs)'),
+          _buildHeaderCell('SGST (Rs)'),
+          _buildHeaderCell('CGST (Rs)'),
+          _buildHeaderCell('Total (Rs)'),
+        ],
+      ),
+    );
+
+    rows.addAll(
+      cartController.cartItems.map<TableRow>((dynamic item) {
+        final Map<String, dynamic> lineItem = Map<String, dynamic>.from(item);
+        final double quantity = _parseDouble(lineItem['quantity']);
+        final double baseAmount = _lineBaseAmount(lineItem);
+        final double sgstAmount = _lineTaxPortion(
+          lineItem,
+          _parseDouble(lineItem['sgst']),
+        );
+        final double cgstAmount = _lineTaxPortion(
+          lineItem,
+          _parseDouble(lineItem['cgst']),
+        );
+        final double totalAmount = _lineTotalWithTax(lineItem);
+
+        final bool isWhole = quantity.truncateToDouble() == quantity;
+
+        return TableRow(
+          children: [
+            _buildBodyCell('${lineItem['name']}', maxLines: 3),
+            _buildBodyCell(quantity.toStringAsFixed(isWhole ? 0 : 2)),
+            _buildBodyCell(baseAmount.toStringAsFixed(2)),
+            _buildBodyCell(sgstAmount.toStringAsFixed(2)),
+            _buildBodyCell(cgstAmount.toStringAsFixed(2)),
+            _buildBodyCell(totalAmount.toStringAsFixed(2)),
+          ],
+        );
+      }),
+    );
+
+    return rows;
+  }
+
+  Widget _buildCartTable(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(32.0),
+      child: Card(
+        elevation: 4.0,
+        color: Colors.grey[100],
+        child: ClipPath(
+          clipper: ShapeBorderClipper(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+          child: Column(
+            children: [
+              Obx(
+                () => SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: MediaQuery.of(context).size.width,
+                    ),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: IntrinsicWidth(
+                        child: Table(
+                          columnWidths: const {
+                            0: FlexColumnWidth(6),
+                            1: FlexColumnWidth(3),
+                            2: FlexColumnWidth(4),
+                            3: FlexColumnWidth(4),
+                            4: FlexColumnWidth(4),
+                            5: FlexColumnWidth(5),
+                          },
+                          border: TableBorder.all(),
+                          children: _buildTableRows(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCustomerDetailsCard() {
     final String phone = widget.transaction.customerPhone ?? 'Not provided';
     final String? name = widget.transaction.customerName;
@@ -228,10 +367,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             children: [
               const Text(
                 'Customer details',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8.0),
               if (name != null && name.isNotEmpty) _buildRow('Name', name),
@@ -280,7 +416,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     try {
       await WhatsappShareImproved.shareFile(
         phone: phone,
-        text: message,          // optional caption
+        text: message, // optional caption
         filePath: [pdfFile.path],
       );
     } catch (error) {
@@ -294,6 +430,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       );
     }
   }
+
   /// Send SMS with only the text summary.
   Future<void> _sendSms() async {
     final String? phone = widget.transaction.customerPhone;
@@ -336,11 +473,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         centerTitle: true,
         elevation: 5.0,
         leading: TextButton(
-          child: Icon(
-            MdiIcons.arrowLeft,
-            size: 30.0,
-            color: Colors.white,
-          ),
+          child: Icon(MdiIcons.arrowLeft, size: 30.0, color: Colors.white),
           onPressed: () {
             Get.back();
           },
@@ -358,289 +491,89 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(top: 10.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Phone input (used for SMS only)
-            _buildCustomerDetailsCard(),
-            if (_isGenerating)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                child: LinearProgressIndicator(),
-              ),
-            const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.only(top: 16.0),
-              child: Text(
-                'Cart',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 35.0,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Card(
-                  elevation: 4.0,
-                  color: Colors.grey[100],
-                  child: ClipPath(
-                    clipper: ShapeBorderClipper(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 10.0, bottom: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildCustomerDetailsCard(),
+                if (_isGenerating)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 8.0,
                     ),
-                    child: SizedBox(
-                      height: 100,
-                      child: Column(
-                        children: [
-                          Obx(
-                                () => Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minWidth:
-                                    MediaQuery.of(context).size.width,
-                                  ),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.vertical,
-    child: IntrinsicWidth(
-    child: Table(
-    columnWidths: const {
-    0: FlexColumnWidth(6), // Name
-    1: FlexColumnWidth(3), // Quantity
-    2: FlexColumnWidth(4), // Base Amount
-    3: FlexColumnWidth(4), // SGST
-    4: FlexColumnWidth(4), // CGST
-    5: FlexColumnWidth(5), // Total (with tax)
-    },
-    border: TableBorder.all(),
-    children: [
-    const TableRow(
-    children: [
-    Padding(
-    padding: EdgeInsets.all(8.0),
-    child: Text(
-    'Name',
-    style: TextStyle(
-    fontSize: 10.0,
-    fontWeight: FontWeight.bold,
-    ),                                                  ),
-                                                ),
-    Padding(
-    padding: EdgeInsets.all(8.0),
-    child: Text(
-    'Qty',
-    style: TextStyle(
-    fontSize: 10.0,
-    fontWeight: FontWeight.bold,
-    ),
-                                                  ),
-                                                ),
-    Padding(
-    padding: EdgeInsets.all(8.0),
-    child: Text(
-    'Base (Rs)',
-    style: TextStyle(
-    fontSize: 10.0,
-    fontWeight: FontWeight.bold,
-    ),
-                                                  ),
-                                                ),
-      Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text(
-          'SGST (Rs)',
-          style: TextStyle(
-            fontSize: 10.0,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text(
-          'CGST (Rs)',
-          style: TextStyle(
-            fontSize: 10.0,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text(
-          'Total (Rs)',
-          style: TextStyle(
-            fontSize: 10.0,
-            fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                              ...cartController.cartItems
-        .map<TableRow>((dynamic item) {
-    final Map<String, dynamic>
-    lineItem =
-    Map<String, dynamic>.from(
-    item as Map);
-    final double quantity =
-    _parseDouble(lineItem['quantity']);
-    final double baseAmount =
-    _lineBaseAmount(lineItem);
-    final double taxAmount =
-    _lineTaxPortion(baseAmount);
-    final double totalAmount =
-    _lineTotalWithTax(lineItem);
-
-    return TableRow(
-                                              children: [
-                                                Padding(
-                                                  padding:
-                                                  const EdgeInsets.all(8.0),
-                                                  child: Text(
-    '${lineItem['name']}',
-                                                    maxLines: 3,
-                                                    overflow:
-                                                    TextOverflow.ellipsis,
-                                                    softWrap: true,
-                                                    style: const TextStyle(
-                                                      fontSize: 10.0,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Padding(
-                                                  padding:
-    const EdgeInsets.all(8.0),
-    child: Text(
-    quantity
-        .toStringAsFixed(2),
-    style: const TextStyle(
-    fontSize: 10.0,
-    ),
-    ),
-    ),
-    Padding(
-    padding:
-    const EdgeInsets.all(8.0),
-    child: Text(
-    baseAmount
-        .toStringAsFixed(2),
-    style: const TextStyle(
-    fontSize: 10.0,
-    ),
-    ),
-    ),
-    Padding(
-    padding:
-    const EdgeInsets.all(8.0),
-
-
-    child: Text(
-
-    taxAmount
-        .toStringAsFixed(2),
-    style: const TextStyle(
-    fontSize: 10.0,
-    ),
-    ),                                                ),
-                                                Padding(
-                                                  padding:
-                                                  const EdgeInsets.all(8.0),
-                                                  child: Text(
-    taxAmount
-                                                        .toStringAsFixed(2),
-                                                    style: const TextStyle(
-                                                      fontSize: 10.0,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Padding(
-                                                  padding:
-                                                  const EdgeInsets.all(8.0),
-                                                  child: Text(
-                                                  totalAmount
-                                                        .toStringAsFixed(2),
-                                                    style: const TextStyle(
-                                                      fontSize: 10.0,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-    );
-                                              }).toList(),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                    child: LinearProgressIndicator(),
+                  ),
+                const SizedBox(height: 16),
+                const Padding(
+                  padding: EdgeInsets.only(top: 16.0),
+                  child: Text(
+                    'Cart',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 35.0,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                _buildCartTable(context),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 35.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Obx(
+                        () => Text(
+                          'Subtotal: Rs.${cartController.subtotalValue.value.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+
+                      const SizedBox(height: 8),
+                      Obx(
+                        () => Text(
+                          'SGST: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+                      Obx(
+                        () => Text(
+                          'CGST: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      Obx(
+                        () => Text(
+                          'Total: Rs.${cartController.totalValue.value.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 35.0,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 35.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Obx(
-                        () => Text(
-                      'Subtotal: Rs.${cartController.subtotalValue.value.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Obx(
-                        () => Text(
-                  'SGST: Rs.${cartController.SGSTValue.value.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Obx(
-                        () => Text(
-    'CGST: Rs.${cartController.CGSTValue.value.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Obx(
-                        () => Text(
-                      'Total: Rs.${cartController.totalValue.value.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 35.0,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

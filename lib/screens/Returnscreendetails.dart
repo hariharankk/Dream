@@ -38,10 +38,12 @@ class _returndetailsState extends State<returndetails> {
     super.initState();
     final double productWeight = widget.product?.weight ?? 0;
     final double productPrice = widget.product?.price ?? 0;
+    final double productGstPrice = widget.product?.gstPrice ?? productPrice;
     productController = Get.put(
       ProductController(
         productWeight: productWeight,
         productPrice: productPrice,
+        productGstPrice: productGstPrice,
       ),
     );
   }
@@ -408,8 +410,8 @@ class _returndetailsState extends State<returndetails> {
                         ProductDetailCard('Name', widget.product!.name),
                         const SizedBox(width: 5),
                         ProductDetailCard(
-                          'Price',
-                          '${productController.productPrice} Rs',
+                          'Price (incl. tax)',
+                          '${productController.productGstPrice} Rs',
                         ),
                         const SizedBox(width: 5),
                         ProductDetailCard(

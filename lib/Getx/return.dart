@@ -33,10 +33,13 @@ class ProductController extends GetxController {
   // Assume the product details are initialized here
   double productWeight;
   double productPrice;
+  double productGstPrice;
 
   ProductController({
     required this.productWeight,
     required this.productPrice,
+    required this.productGstPrice,
+
   });
 
   // Call this function whenever user enters or updates the used weight
@@ -60,7 +63,9 @@ class ProductController extends GetxController {
         // Convert back to double
 
 // Calculate cost of used weight to be returned
-      costOfUsed.value = double.parse(((productPrice / productWeight) * remainingWeight.value).toStringAsFixed(0));
+      costOfUsed.value = double.parse(
+          ((productGstPrice / productWeight) * remainingWeight.value)
+              .toStringAsFixed(2));
         // Convert back to double
     } else {
       usedWeight.value = 0.0;

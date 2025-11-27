@@ -289,15 +289,15 @@ class _CartScreenState extends State<CartScreen> {
                       child: IntrinsicWidth(
                         child: Table(
                           columnWidths: const {
-                            0: FlexColumnWidth(6),
-                            1: FlexColumnWidth(5),
-                            2: FlexColumnWidth(4),
-                            3: FlexColumnWidth(4),
-                            4: FlexColumnWidth(4),
-                            5: FlexColumnWidth(4),
-                            6: FlexColumnWidth(5),
-                            7: FlexColumnWidth(4),
-                            8: FlexColumnWidth(4),
+                            0: FlexColumnWidth(8),
+                            1: FlexColumnWidth(8),
+                            2: FlexColumnWidth(8),
+                            3: FlexColumnWidth(8),
+                            4: FlexColumnWidth(8),
+                            5: FlexColumnWidth(8),
+                            6: FlexColumnWidth(8),
+                            7: FlexColumnWidth(8),
+                            8: FlexColumnWidth(8),
                           },
                           border: TableBorder.all(),
                           children: _buildTableRows(),
@@ -365,7 +365,7 @@ class _CartScreenState extends State<CartScreen> {
           Expanded(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.red,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(
                     Radius.circular(8.0),
@@ -394,7 +394,7 @@ class _CartScreenState extends State<CartScreen> {
           const SizedBox(width: 10.0),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.green,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(
                   Radius.circular(8.0),

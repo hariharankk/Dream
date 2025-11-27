@@ -107,7 +107,7 @@ class _ReturnPageState extends State<ReturnPage> {
                   height: 5.0,
                 ),
                 Text(
-                  'Price  :   ${product!.price}',
+                  'Price  :   ${product!.gstPrice ?? product!.price}',
                   style: TextStyle(),
                 ),
                 SizedBox(
