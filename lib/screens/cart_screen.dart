@@ -241,7 +241,7 @@ class _CartScreenState extends State<CartScreen> {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 10.0,
+          fontSize: 8.0,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -257,7 +257,7 @@ class _CartScreenState extends State<CartScreen> {
         overflow: TextOverflow.ellipsis,
         softWrap: true,
         style: const TextStyle(
-          fontSize: 10.0,
+          fontSize: 8.0,
         ),
       ),
     );
@@ -272,7 +272,7 @@ class _CartScreenState extends State<CartScreen> {
         child: ClipPath(
           clipper: ShapeBorderClipper(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           child: Column(
@@ -289,15 +289,15 @@ class _CartScreenState extends State<CartScreen> {
                       child: IntrinsicWidth(
                         child: Table(
                           columnWidths: const {
-                            0: FlexColumnWidth(8),
-                            1: FlexColumnWidth(8),
-                            2: FlexColumnWidth(8),
-                            3: FlexColumnWidth(8),
-                            4: FlexColumnWidth(8),
-                            5: FlexColumnWidth(8),
-                            6: FlexColumnWidth(8),
-                            7: FlexColumnWidth(8),
-                            8: FlexColumnWidth(8),
+                            0: FlexColumnWidth(20),
+                            1: FlexColumnWidth(20),
+                            2: FlexColumnWidth(20),
+                            3: FlexColumnWidth(20),
+                            4: FlexColumnWidth(20),
+                            5: FlexColumnWidth(20),
+                            6: FlexColumnWidth(20),
+                            7: FlexColumnWidth(20),
+                            8: FlexColumnWidth(20),
                           },
                           border: TableBorder.all(),
                           children: _buildTableRows(),

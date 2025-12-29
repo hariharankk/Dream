@@ -23,6 +23,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   final PdfInvoiceService _pdfInvoiceService = PdfInvoiceService();
 
   bool _isGenerating = false;
+  static const String _companyName = 'JKT Hitech Rice Industries';
+  static const String _companyAddress =
+      'Your full address line 1,\nYour area, city, district, PIN';
+  static const String _companyGst = '33AAUFJ0516G1ZH';
+  static const String _companyFssai = 'Your FSSAI No here';
 
   @override
   void initState() {
@@ -126,11 +131,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         total: cartController.totalValue.value,
 
         // ------- COMPANY DETAILS (edit these once) -------
-        companyName: 'JKT Hitech Rice Industries',
-        companyAddress:
-            'Your full address line 1,\nYour area, city, district, PIN',
-        companyGst: '33AAUFJ0516G1ZH',
-        companyFssai: 'Your FSSAI No here',
+        companyName: _companyName,
+        companyAddress: _companyAddress,
+        companyGst: _companyGst,
+        companyFssai: _companyFssai,
 
         // ------- CUSTOMER DETAILS FROM TRANSACTION -------
         customerName: widget.transaction.customerName,
@@ -168,6 +172,25 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     final StringBuffer buffer = StringBuffer();
     buffer.writeln('Invoice #${widget.transaction.id ?? '-'}');
     buffer.writeln('Date: ${formatter.format(timestamp)}');
+    buffer.writeln('Seller: $_companyName');
+    buffer.writeln('Seller GST: $_companyGst');
+    buffer.writeln('Seller FSSAI: $_companyFssai');
+    if (_companyAddress.isNotEmpty) {
+      buffer.writeln(
+        'Seller Address: ${_companyAddress.replaceAll('\n', ', ')}',
+      );
+    }
+    if ((widget.transaction.customerName ?? '').isNotEmpty) {
+      buffer.writeln('Buyer: ${widget.transaction.customerName}');
+    }
+    if ((widget.transaction.customerAddress ?? '').isNotEmpty) {
+      buffer.writeln(
+        'Buyer Address: ${widget.transaction.customerAddress!.replaceAll('\n', ', ')}',
+      );
+    }
+    if ((widget.transaction.customerPhone ?? '').isNotEmpty) {
+      buffer.writeln('Buyer Phone: ${widget.transaction.customerPhone}');
+    }
 
     for (final Map<String, dynamic> item in _buildInvoiceItems()) {
       final double quantity = _parseDouble(item['quantity']);
@@ -245,8 +268,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       TableRow(
         children: [
           _buildHeaderCell('Name'),
+          _buildHeaderCell('Base Rate (Rs)'),
           _buildHeaderCell('Qty'),
-          _buildHeaderCell('Base (Rs)'),
+          _buildHeaderCell('Base Amount (Rs)'),
           _buildHeaderCell('SGST (Rs)'),
           _buildHeaderCell('CGST (Rs)'),
           _buildHeaderCell('Total (Rs)'),
@@ -257,6 +281,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     rows.addAll(
       cartController.cartItems.map<TableRow>((dynamic item) {
         final Map<String, dynamic> lineItem = Map<String, dynamic>.from(item);
+        final double baseRate = _lineBaseRate(lineItem);
         final double quantity = _parseDouble(lineItem['quantity']);
         final double baseAmount = _lineBaseAmount(lineItem);
         final double sgstAmount = _lineTaxPortion(
@@ -274,6 +299,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         return TableRow(
           children: [
             _buildBodyCell('${lineItem['name']}', maxLines: 3),
+            _buildBodyCell(baseRate.toStringAsFixed(2)),
             _buildBodyCell(quantity.toStringAsFixed(isWhole ? 0 : 2)),
             _buildBodyCell(baseAmount.toStringAsFixed(2)),
             _buildBodyCell(sgstAmount.toStringAsFixed(2)),
@@ -312,13 +338,14 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       scrollDirection: Axis.vertical,
                       child: IntrinsicWidth(
                         child: Table(
-                          columnWidths: const {
-                            0: FlexColumnWidth(6),
-                            1: FlexColumnWidth(3),
-                            2: FlexColumnWidth(4),
-                            3: FlexColumnWidth(4),
-                            4: FlexColumnWidth(4),
-                            5: FlexColumnWidth(5),
+                                 columnWidths: const {
+                            0: FlexColumnWidth(10),
+                            1: FlexColumnWidth(10),
+                            2: FlexColumnWidth(10),
+                            3: FlexColumnWidth(10),
+                            4: FlexColumnWidth(10),
+                            5: FlexColumnWidth(10),
+                            6: FlexColumnWidth(10     ),
                           },
                           border: TableBorder.all(),
                           children: _buildTableRows(),

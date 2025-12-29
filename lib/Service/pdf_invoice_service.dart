@@ -138,39 +138,47 @@ class PdfInvoiceService {
           pw.Table(
             border: pw.TableBorder.all(width: 0.5),
             columnWidths: <int, pw.TableColumnWidth>{
-              0: const pw.FlexColumnWidth(4),   // Item
-              1: const pw.FlexColumnWidth(1.5), // Qty
-              2: const pw.FlexColumnWidth(2), // Base (Rs)
-              3: const pw.FlexColumnWidth(2), // SGST (Rs)
-              4: const pw.FlexColumnWidth(2), // CGST (Rs)
-              5: const pw.FlexColumnWidth(2.3), // To
+              0: const pw.FlexColumnWidth(4), // Item
+              1: const pw.FlexColumnWidth(2.1), // Base Rate (Rs)
+              2: const pw.FlexColumnWidth(1.5), // Qty
+              3: const pw.FlexColumnWidth(2.2), // Base Amount (Rs)
+              4: const pw.FlexColumnWidth(2), // SGST (Rs)
+              5: const pw.FlexColumnWidth(2), // CGST (Rs)
+              6: const pw.FlexColumnWidth(2.3), //
             },
             children: [
               // Header row
               pw.TableRow(
                 children: [
                   _tableHeaderCell('Item'),
+                  _tableHeaderCell('Base Rate (Rs)'),
                   _tableHeaderCell('Qty'),
-                  _tableHeaderCell('Base (Rs)'),
+                  _tableHeaderCell('Base Amount (Rs)'),
                   _tableHeaderCell('SGST (Rs)'),
                   _tableHeaderCell('CGST (Rs)'),
                   _tableHeaderCell('Total (Rs)'),                ],
               ),
               // Data rows
               ...items.map((Map<String, dynamic> item) {
-                final double price = _toDouble(item['price']);
+                final double priceWithTax = _toDouble(item['price']);
+                final double sgstPercent = _toDouble(item['sgst']);
+                final double cgstPercent = _toDouble(item['cgst']);
+                final double baseRate = _baseRate(priceWithTax, sgstPercent, cgstPercent);
                 final double quantity = _toDouble(item['quantity']);
-                final double baseAmount = price * quantity;
+                final double baseAmount =
+                double.parse((baseRate * quantity).toStringAsFixed(2));
                 final double sgstAmount = double.parse(
-                    (baseAmount * 0.025).toStringAsFixed(2));
+                    (baseAmount * (sgstPercent / 100)).toStringAsFixed(2));
                 final double cgstAmount = double.parse(
-                    (baseAmount * 0.025).toStringAsFixed(2));
-                final double totalAmount = baseAmount + sgstAmount + cgstAmount;
+                    (baseAmount * (cgstPercent / 100)).toStringAsFixed(2));
+                final double totalAmount = double.parse(
+                    (baseAmount + sgstAmount + cgstAmount).toStringAsFixed(2));
 
 
                 return pw.TableRow(
                   children: [
                     _tableCell(item['name']?.toString() ?? ''),
+                    _tableCell(baseRate.toStringAsFixed(2)),
                     _tableCell(_formatQty(quantity)),
                     _tableCell(baseAmount.toStringAsFixed(2)),
                     _tableCell(sgstAmount.toStringAsFixed(2)),
@@ -198,11 +206,11 @@ class PdfInvoiceService {
                       subtotal.toStringAsFixed(2),
                     ),
                     _buildSummaryRow(
-                      'SGST (2.5%) (Rs)',
+                      'SGST (Rs)',
                       sgst.toStringAsFixed(2),
                     ),
                     _buildSummaryRow(
-                      'CGST (2.5%) (Rs)',
+                      'CGST  (Rs)',
                       cgst.toStringAsFixed(2),
                     ),
                     pw.Divider(),
@@ -399,6 +407,17 @@ class PdfInvoiceService {
     return qty.toStringAsFixed(isWhole ? 0 : 2);
   }
 
+  static double _baseRate(
+      double priceWithTax,
+      double sgstPercent,
+      double cgstPercent,
+      ) {
+    final double totalTaxPercent = sgstPercent + cgstPercent;
+    if (totalTaxPercent <= 0) {
+      return priceWithTax;
+    }
+    return priceWithTax / (1 + (totalTaxPercent / 100));
+  }
   static double _toDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is num) return value.toDouble();
